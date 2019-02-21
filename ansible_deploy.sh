@@ -88,6 +88,7 @@ fi
 echo ":: DEPLOYMENT DETAILS ::"
 echo "   - TESTNET: $TESTNET"
 echo "   - ADMIN_EMAIL: $ADMIN_EMAIL"
+echo "   - ALERT_EMAIL: $ALERT_EMAIL"
 echo "   - DEPLOY_HOST: $DEPLOY_HOST"
 echo "   - DEPLOY_USER: $DEPLOY_USER"
 echo "   - BACKUP_KEY: $BACKUP_KEY"
