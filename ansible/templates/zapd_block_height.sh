@@ -1,15 +1,32 @@
 #!/bin/bash
 
-dest_email=alerts@zap.me
-remote_block=`curl -s https://testnode1.wavesnodes.com/blocks/height | jq '.["height"]'` 
-local_block=`curl -s localhost:6869/blocks/height | jq '.["height"]'`
+dest_email={{ dest_email }}
 max_height_diff=2
 
-### Remote block would be same/higher than local block.
-num=$(( $remote_block - $local_block ))
+{% if ansible_hostname == 'testnet' %}
+  {% set node_address =  'testnet1.wavesnodes.com' %}
+{% else %}
+  {% set node_address = 'nodes.wavesnodes.com' %}
+{% endif %}
 
-if [ $num -ge $max_height_diff ]; then
-	echo "The remote node is at $remote_block while the local node is at $local_block" | mail -s "WAVE Local Node is not synced" $dest_email
+remote_block=`curl -s https://{{ node_address }}/blocks/height | jq '.["height"]'` 
+local_block=`curl -s localhost:6869/blocks/height | jq '.["height"]'`
+
+### Condition to compare two values.
+if [ $remote_block > $local_block ]; then
+	num=$(( $remote_block - $local_block ))
+	if [ $num -ge $max_height_diff ]; then
+		echo "The remote node is at $remote_block while the local node is at $local_block." | mail -s "The nodes are not synced" $dest_email
+	else
+		exit
+	fi
+elif [ $local_block > $remote_block ]; then
+	num=$(( $local_block - $remote_block ))
+	if [ $num -ge $max_height_diff ]; then
+		echo "The local node is at $local_block while the remote node is at $remote_block." | mail -s "The nodes are not synced" $dest_email
+	else
+		exit
+	fi
 else
 	exit
 fi
