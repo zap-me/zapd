@@ -5,11 +5,8 @@
   become_user: root
 
   vars:
-   dest_email: alerts@zap.me
    min_zap: 5000
    max_zap: 10000
-   testnet_node: testnet1.wavesnodes.com
-   mainnet_node: nodes.wavesnodes.com
 
 
   tasks:
@@ -26,7 +23,11 @@
         src: templates/zapd_balance.sh
         dest: /root/scripts/zapd_balance.sh
         mode: 0755
-    
+   
+    - name : DEBUG
+      debug:
+        msg: "The host is {{ DEPLOY_HOST }}" 
+ 
     - name: copy the zapd_block_height.sh using the template module
       template:
         src: templates/zapd_block_height.sh
