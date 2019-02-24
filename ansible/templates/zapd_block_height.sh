@@ -1,9 +1,10 @@
 #!/bin/bash
 
-dest_email={{ dest_email }}
+dest_email={{ ALERT_EMAIL }}
 max_height_diff=2
 
-{% if ansible_hostname == 'testnet' %}
+
+{% if DEPLOY_HOST == 'testnet.zap.me' %}
   {% set node_address =  'testnet1.wavesnodes.com' %}
 {% else %}
   {% set node_address = 'nodes.wavesnodes.com' %}
