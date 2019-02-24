@@ -77,10 +77,10 @@ TESTNET=
 # set deploy variables for test
 if [[ ( $DEPLOY_TYPE == "test" ) ]]
 then 
-	DEPLOY_HOST=testnet.zap.me
-	DEPLOY_USER=root
-	REMOTE_WAVES_NODES=testnet1.wavesnodes.com
-	TESTNET=true
+    DEPLOY_HOST=testnet.zap.me
+    DEPLOY_USER=root
+    REMOTE_WAVES_NODES=testnet1.wavesnodes.com
+    TESTNET=true
 fi 
 
 # create archive
