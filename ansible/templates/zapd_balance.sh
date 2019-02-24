@@ -6,7 +6,7 @@ zap_bal=$(( $bal / 100 ))
 
 min_bal={{ min_zap }}
 max_bal={{ max_zap }}
-dest_email={{ dest_email }}
+dest_email={{ ALERT_EMAIL }}
 
 
 if [ $zap_bal -lt $min_bal ]; then

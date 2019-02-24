@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dest_email={{ dest_email }}
+dest_email={{ ALERT_EMAIL }}
 app_port=5000
 app="zapd"
 host="localhost"
