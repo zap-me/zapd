@@ -8,7 +8,6 @@
    min_zap: 5000
    max_zap: 10000
 
-
   tasks:
     - name: create the scripts directory
       file:
@@ -24,20 +23,16 @@
         dest: /root/scripts/zapd_balance.sh
         mode: 0755
    
-    - name : DEBUG
-      debug:
-        msg: "The host is {{ DEPLOY_HOST }}" 
- 
     - name: copy the zapd_block_height.sh using the template module
       template:
         src: templates/zapd_block_height.sh
         dest: /root/scripts/zapd_block_height.sh
         mode: 0755
     
-    - name: copy the zapd_test.sh using the template module
+    - name: copy the zapd_heartbeat.sh using the template module
       template:
-        src: templates/zapd_test.sh
-        dest: /root/scripts/zapd_test.sh
+        src: templates/zapd_online_test.sh
+        dest: /root/scripts/zapd_heartbeat.sh
         mode: 0755
     
     - name: Cronjob entry for zapd_balance.sh
@@ -60,7 +55,7 @@
         weekday: "*"
         job: /root/script/zapd_block_height.sh
     
-    - name: Cronjob entry for zapd_test.sh
+    - name: Cronjob entry for zapd_heartbeat.sh
       cron:
         name: "### Notification sent if the localhost is not able to get a respond from zapd app on port 5000."
         minute: "*/5"
@@ -68,4 +63,4 @@
         day: "*"
         month: "*"
         weekday: "*"
-        job: /root/script/zapd_block_height.sh
+        job: /root/script/zapd_heartbeat.sh
