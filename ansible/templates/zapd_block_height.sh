@@ -3,14 +3,7 @@
 dest_email={{ ALERT_EMAIL }}
 max_height_diff=2
 
-
-{% if DEPLOY_HOST == 'testnet.zap.me' %}
-  {% set node_address =  'testnet1.wavesnodes.com' %}
-{% else %}
-  {% set node_address = 'nodes.wavesnodes.com' %}
-{% endif %}
-
-remote_block=`curl -s https://{{ node_address }}/blocks/height | jq '.["height"]'` 
+remote_block=`curl -s https://{{ REMOTE_WAVES_NODES }}/blocks/height | jq '.["height"]'` 
 local_block=`curl -s localhost:6869/blocks/height | jq '.["height"]'`
 
 ### Condition to compare two values.
