@@ -37,7 +37,7 @@
     
     - name: copy the zapd_heartbeat.sh using the template module
       template:
-        src: templates/zapd_online_test.sh
+        src: templates/zapd_heartbeat.sh
         dest: /root/scripts/zapd_heartbeat.sh
         mode: 0755
     
