@@ -49,7 +49,7 @@
         day: "*"
         month: "*"
         weekday: "*"
-        job: /root/script/zapd_balance.sh
+        job: /root/scripts/zapd_balance.sh
     
     - name: Cronjob entry for zapd_block_height.sh
       cron:
@@ -59,7 +59,7 @@
         day: "*"
         month: "*"
         weekday: "*"
-        job: /root/script/zapd_block_height.sh
+        job: /root/scripts/zapd_block_height.sh
     
     - name: Cronjob entry for zapd_heartbeat.sh
       cron:
@@ -69,7 +69,7 @@
         day: "*"
         month: "*"
         weekday: "*"
-        job: /root/script/zapd_heartbeat.sh
+        job: /root/scripts/zapd_heartbeat.sh
 
     - name: add cron job to expire transactions
       cron:
