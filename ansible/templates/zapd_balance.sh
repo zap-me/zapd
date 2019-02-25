@@ -2,7 +2,7 @@
 
 
 bal=`curl -s -d '{"jsonrpc":"2.0","id":1,"method":"getbalance","params":{}}' -H "Content-Type: application/json-rpc" localhost:5000/api | jq '.["result"]["balance"]'`
-zap_bal=$(( $bal / 100 ))
+zap_bal=$(( bal / 100 ))
 
 min_bal={{ min_zap }}
 max_bal={{ max_zap }}
