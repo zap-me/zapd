@@ -25,70 +25,93 @@ display_usage() {
     "
 } 
 
-# if less than two arguments supplied, display usage 
-if [  $# -le 4 ]
-then 
-    display_usage
-    exit 1
+KEYS_SUPPLIED="true"
+WARNING=
+
+if [ $# == 1 ]
+then
+	## No keys specified. Just provided "test" or "production".
+	KEYS_SUPPLIED=false
+	WARNING="WARNING!!! NO KEYS SUPPLIED!!!!"
+elif [[ ( $# -le 4 ) || ( $# -gt 5 ) ]]
+then	
+	## if less than four arguments supplied, display usage 
+	display_usage
+	exit 1
 fi 
 
-# check whether user had supplied -h or --help . If yes display usage 
+## check whether user had supplied -h or --help . If yes display usage 
 if [[ ( $@ == "--help" ) ||  ( $@ == "-h" ) ]] 
 then 
-    display_usage
-    exit 0
+	display_usage
+	exit 0
 fi 
 
-# check whether user has a valid DEPLOY_TYPE
+## check whether user has a valid DEPLOY_TYPE
 if [[ ( $DEPLOY_TYPE != "test" ) &&  ( $DEPLOY_TYPE != "production" ) ]] 
 then 
-    display_usage
-    echo !!\"$DEPLOY_TYPE\" is not valid
-    exit 2
+	display_usage
+	echo !!\"$DEPLOY_TYPE\" is not valid
+	exit 2
 fi 
 
-# check whether backup key exists
-if [ ! -f "$BACKUP_KEY" ]
+## check whether backup key exists
+if [[ ( ! -f "$BACKUP_KEY" ) && ( $# -eq 5 ) ]]
 then
-    display_usage
-    echo !!\"$BACKUP_KEY\" does not exist
-    exit 3
+	display_usage
+	echo !!\"$BACKUP_KEY\" does not exist
+	exit 3
 fi
-BACKUP_KEY=`realpath $BACKUP_KEY`
 
-# check whether backup ssh key exists
-if [ ! -f "$BACKUP_SSH_KEY" ]
+if [[ $KEYS_SUPPLIED == "true" ]]
+then
+	BACKUP_KEY=`realpath $BACKUP_KEY`
+fi
+
+## check whether backup ssh key exists
+if [[ ( ! -f "$BACKUP_SSH_KEY"  ) && ( $# -eq 5 ) ]]
 then 
-    display_usage
-    echo !!\"$BACKUP_SSH_KEY\" does not exist
-    exit 3
+	display_usage
+	echo !!\"$BACKUP_SSH_KEY\" does not exist
+	exit 3
 fi 
-BACKUP_SSH_KEY=`realpath $BACKUP_SSH_KEY`
 
-ADMIN_EMAIL=admin@zap.me
-ALERT_EMAIL=alerts@zap.me
+if [[ $KEYS_SUPPLIED == "true" ]]
+then
+	BACKUP_SSH_KEY=`realpath $BACKUP_SSH_KEY`
+fi
+
+#ADMIN_EMAIL=admin@zap.me
+#ALERT_EMAIL=alerts@zap.me
+ALERT_EMAIL=e.f.oliveros@gmail.com
+ADMIN_EMAIL=e.f.oliveros@gmail.com
 VAGRANT=false
 BACKUP_HOST=backup.zap.me
-# set deploy variables for production
-DEPLOY_HOST=mainnet.zap.me
+## set deploy variables for production
+#DEPLOY_HOST=mainnet.zap.me
+DEPLOY_HOST=srv02.redrat.local
 DEPLOY_USER=root
 REMOTE_WAVES_NODES=nodes.wavesnodes.com
 TESTNET=
-# set deploy variables for test
+## set deploy variables for test
 if [[ ( $DEPLOY_TYPE == "test" ) ]]
 then 
-    DEPLOY_HOST=testnet.zap.me
-    DEPLOY_USER=root
-    REMOTE_WAVES_NODES=testnet1.wavesnodes.com
-    TESTNET=true
+	#DEPLOY_HOST=testnet.zap.me
+	DEPLOY_HOST=srv01.redrat.local
+	DEPLOY_USER=root
+	REMOTE_WAVES_NODES=testnet1.wavesnodes.com
+	TESTNET=true
 fi 
 
-# create archive
+## create archive
 (cd zapd; git archive --format=zip HEAD > ../zapd.zip)
 
-# print variables
+## print variables
 echo ":: DEPLOYMENT DETAILS ::"
+echo "$WARNING"
+echo "$WARNING"
 echo "   - TESTNET: $TESTNET"
+echo "   - KEYS: $KEYS_SUPPLIED"
 echo "   - ADMIN_EMAIL: $ADMIN_EMAIL"
 echo "   - ALERT_EMAIL: $ALERT_EMAIL"
 echo "   - DEPLOY_HOST: $DEPLOY_HOST"
@@ -99,16 +122,16 @@ echo "   - BACKUP_HOST: $BACKUP_HOST"
 echo "   - WEBHOOK_URL: $WEBHOOK_URL"
 echo "   - WEBHOOK_KEY: $WEBHOOK_KEY"
 echo "   - REMOTE_WAVES_NODES: $REMOTE_WAVES_NODES"
-echo "   - ZAPD_ARCIVCE: zapd.zip"
+echo "   - ZAPD_ARCHIVE: zapd.zip"
 
-# ask user to continue
+## ask user to continue
 read -p "Are you sure? " -n 1 -r
 echo # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    # do dangerous stuff
-    echo ok lets go!!!
-    ansible-playbook --inventory "$DEPLOY_HOST," --user "$DEPLOY_USER" -v \
-        --extra-vars "ADMIN_EMAIL=$ADMIN_EMAIL ALERT_EMAIL=$ALERT_EMAIL DEPLOY_HOST=$DEPLOY_HOST BACKUP_KEY='$BACKUP_KEY' BACKUP_SSH_KEY='$BACKUP_SSH_KEY' BACKUP_HOST=$BACKUP_HOST WEBHOOK_URL=$WEBHOOK_URL WEBHOOK_KEY=$WEBHOOK_KEY REMOTE_WAVES_NODES=$REMOTE_WAVES_NODES VAGRANT=$VAGRANT TESTNET=$TESTNET" \
+	## do dangerous stuff
+	echo ok lets go!!!
+	ansible-playbook --inventory "$DEPLOY_HOST," --user "$DEPLOY_USER" -v \
+        --extra-vars "ADMIN_EMAIL=$ADMIN_EMAIL ALERT_EMAIL=$ALERT_EMAIL DEPLOY_HOST=$DEPLOY_HOST BACKUP_KEY='$BACKUP_KEY' BACKUP_SSH_KEY='$BACKUP_SSH_KEY' BACKUP_HOST=$BACKUP_HOST WEBHOOK_URL=$WEBHOOK_URL WEBHOOK_KEY=$WEBHOOK_KEY REMOTE_WAVES_NODES=$REMOTE_WAVES_NODES KEYS_SUPPLIED=$KEYS_SUPPLIED VAGRANT=$VAGRANT TESTNET=$TESTNET" \
         ansible/deploy.yml
 fi
