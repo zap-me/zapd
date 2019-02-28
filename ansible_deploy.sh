@@ -3,6 +3,9 @@
 DEPLOY_TEST=test
 DEPLOY_PRODUCTION=production
 DEPLOY_TYPE=$1
+DEPLOY_LEVEL_ZAPD_ONLY=zapd_only
+DEPLOY_LEVEL_NO_KEYS=no_keys
+DEPLOY_LEVEL=$2
 BACKUP_KEY=$2
 BACKUP_SSH_KEY=$3
 WEBHOOK_URL=$4
@@ -13,6 +16,8 @@ display_usage() {
 
     ansible_deploy.sh <DEPLOY_TYPE ($DEPLOY_TEST | $DEPLOY_PRODUCTION)> <BACKUP_KEY> <BACKUP_SSH_KEY> <WEBHOOK_URL> <WEBHOOK_KEY>
 
+        This is the full deploy scenario, required for initial deployment:
+
         BACKUP_KEY: the **public** GPG key used to encrypt backups
                     (use \"gpg --armor --export <KEY_NAME> > backup_key.asc\" to export public key)
 
@@ -22,22 +27,41 @@ display_usage() {
 
         WEBHOOK_KEY: the key to sign the transaction notifications with
 
+    ansible_deploy.sh <DEPLOY_TYPE ($DEPLOY_TEST | $DEPLOY_PRODUCTION)> <DEPLOY_LEVEL ($DEPLOY_LEVEL_ZAPD_ONLY | $DEPLOY_LEVEL_NO_KEYS)>
+        
+        This is a lesser deploy scenario:
+
+        DEPLOY_LEVEL=$DEPLOY_LEVEL_ZAPD_ONLY: only update the zapd service
+
+        DEPLOY_LEVEL=$DEPLOY_LEVEL_NO_KEYS: almost a full deploy but without the backup keys or webhook details supplied so those steps are skipped
     "
 } 
 
 KEYS_SUPPLIED=true
-WARNING=
+FULL_DEPLOY=true
 
-if [ $# == 1 ]
+if [ $# == 2 ]
 then
-    ## No keys specified. Just provided "test" or "production".
+    ## A lesser deployment
+
+    ## check whether user has a valid DEPLOY_LEVEL
+    if [[ ( "$DEPLOY_LEVEL" != "$DEPLOY_LEVEL_NO_KEYS" ) && ( "$DEPLOY_LEVEL" != "$DEPLOY_LEVEL_ZAPD_ONLY" ) ]] 
+    then
+        display_usage
+        echo !!\"$DEPLOY_LEVEL\" is not valid
+        exit 2
+    fi
     KEYS_SUPPLIED=
-    WARNING="WARNING!!!! NO KEYS (backup and webhook) SUPPLIED!!!!"
+    if [[ "$DEPLOY_LEVEL" == "$DEPLOY_LEVEL_ZAPD_ONLY" ]]; then
+        FULL_DEPLOY=
+    fi
 elif [[ ( $# -le 4 ) || ( $# -gt 5 ) ]]
 then
     ## if less than four arguments supplied, display usage 
     display_usage
     exit 1
+else
+    DEPLOY_LEVEL=full
 fi 
 
 ## check whether user had supplied -h or --help . If yes display usage 
@@ -80,7 +104,7 @@ fi
 
 ADMIN_EMAIL=admin@zap.me
 ALERT_EMAIL=alerts@zap.me
-VAGRANT=false
+VAGRANT=
 BACKUP_HOST=backup.zap.me
 ## set deploy variables for production
 DEPLOY_HOST=mainnet.zap.me
@@ -101,19 +125,19 @@ fi
 
 ## print variables
 echo ":: DEPLOYMENT DETAILS ::"
-echo "$WARNING"
-echo "   - TESTNET: $TESTNET"
-echo "   - ADMIN_EMAIL: $ADMIN_EMAIL"
-echo "   - ALERT_EMAIL: $ALERT_EMAIL"
-echo "   - DEPLOY_HOST: $DEPLOY_HOST"
-echo "   - DEPLOY_USER: $DEPLOY_USER"
-echo "   - BACKUP_KEY: $BACKUP_KEY"
-echo "   - BACKUP_SSH_KEY: $BACKUP_SSH_KEY"
-echo "   - BACKUP_HOST: $BACKUP_HOST"
-echo "   - WEBHOOK_URL: $WEBHOOK_URL"
-echo "   - WEBHOOK_KEY: $WEBHOOK_KEY"
+echo "   - DEPLOY_HOST:     $DEPLOY_HOST"
+echo "   - DEPLOY_LEVEL:    $DEPLOY_LEVEL"
+echo "   - TESTNET:         $TESTNET"
+echo "   - ADMIN_EMAIL:     $ADMIN_EMAIL"
+echo "   - ALERT_EMAIL:     $ALERT_EMAIL"
+echo "   - DEPLOY_USER:     $DEPLOY_USER"
+echo "   - BACKUP_KEY:      $BACKUP_KEY"
+echo "   - BACKUP_SSH_KEY:  $BACKUP_SSH_KEY"
+echo "   - BACKUP_HOST:     $BACKUP_HOST"
+echo "   - WEBHOOK_URL:     $WEBHOOK_URL"
+echo "   - WEBHOOK_KEY:     $WEBHOOK_KEY"
 echo "   - REMOTE_WAVES_NODES: $REMOTE_WAVES_NODES"
-echo "   - ZAPD_ARCHIVE: zapd.zip"
+echo "   - ZAPD_ARCHIVE:    zapd.zip"
 
 ## ask user to continue
 read -p "Are you sure? " -n 1 -r
@@ -123,6 +147,6 @@ then
     ## do dangerous stuff
     echo ok lets go!!!
     ansible-playbook --inventory "$DEPLOY_HOST," --user "$DEPLOY_USER" -v \
-        --extra-vars "ADMIN_EMAIL=$ADMIN_EMAIL ALERT_EMAIL=$ALERT_EMAIL DEPLOY_HOST=$DEPLOY_HOST BACKUP_KEY='$BACKUP_KEY' BACKUP_SSH_KEY='$BACKUP_SSH_KEY' BACKUP_HOST=$BACKUP_HOST WEBHOOK_URL=$WEBHOOK_URL WEBHOOK_KEY=$WEBHOOK_KEY REMOTE_WAVES_NODES=$REMOTE_WAVES_NODES KEYS_SUPPLIED=$KEYS_SUPPLIED VAGRANT=$VAGRANT TESTNET=$TESTNET" \
+        --extra-vars "ADMIN_EMAIL=$ADMIN_EMAIL ALERT_EMAIL=$ALERT_EMAIL DEPLOY_HOST=$DEPLOY_HOST BACKUP_KEY='$BACKUP_KEY' BACKUP_SSH_KEY='$BACKUP_SSH_KEY' BACKUP_HOST=$BACKUP_HOST WEBHOOK_URL=$WEBHOOK_URL WEBHOOK_KEY=$WEBHOOK_KEY REMOTE_WAVES_NODES=$REMOTE_WAVES_NODES KEYS_SUPPLIED=$KEYS_SUPPLIED FULL_DEPLOY=$FULL_DEPLOY VAGRANT=$VAGRANT TESTNET=$TESTNET" \
         ansible/deploy.yml
 fi
