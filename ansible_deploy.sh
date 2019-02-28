@@ -25,82 +25,75 @@ display_usage() {
     "
 } 
 
-KEYS_SUPPLIED="true"
+KEYS_SUPPLIED=true
 WARNING=
 
 if [ $# == 1 ]
 then
-	## No keys specified. Just provided "test" or "production".
-	KEYS_SUPPLIED=false
-	WARNING="WARNING!!! NO KEYS SUPPLIED!!!!"
+    ## No keys specified. Just provided "test" or "production".
+    KEYS_SUPPLIED=
+    WARNING="WARNING!!!! NO KEYS (backup and webhook) SUPPLIED!!!!"
 elif [[ ( $# -le 4 ) || ( $# -gt 5 ) ]]
-then	
-	## if less than four arguments supplied, display usage 
-	display_usage
-	exit 1
+then
+    ## if less than four arguments supplied, display usage 
+    display_usage
+    exit 1
 fi 
 
 ## check whether user had supplied -h or --help . If yes display usage 
 if [[ ( $@ == "--help" ) ||  ( $@ == "-h" ) ]] 
 then 
-	display_usage
-	exit 0
+    display_usage
+    exit 0
 fi 
 
 ## check whether user has a valid DEPLOY_TYPE
 if [[ ( $DEPLOY_TYPE != "test" ) &&  ( $DEPLOY_TYPE != "production" ) ]] 
 then 
-	display_usage
-	echo !!\"$DEPLOY_TYPE\" is not valid
-	exit 2
+    display_usage
+    echo !!\"$DEPLOY_TYPE\" is not valid
+    exit 2
 fi 
 
 ## check whether backup key exists
-if [[ ( ! -f "$BACKUP_KEY" ) && ( $# -eq 5 ) ]]
+if [[ ( ! -f "$BACKUP_KEY" ) && ( "$KEYS_SUPPLIED" == "true") ]]
 then
-	display_usage
-	echo !!\"$BACKUP_KEY\" does not exist
-	exit 3
+    display_usage
+    echo !!\"$BACKUP_KEY\" does not exist
+    exit 3
 fi
 
 if [[ $KEYS_SUPPLIED == "true" ]]
 then
-	BACKUP_KEY=`realpath $BACKUP_KEY`
+    BACKUP_KEY=`realpath $BACKUP_KEY`
 fi
 
 ## check whether backup ssh key exists
-if [[ ( ! -f "$BACKUP_SSH_KEY"  ) && ( $# -eq 5 ) ]]
+if [[ ( ! -f "$BACKUP_SSH_KEY"  ) && ( "$KEYS_SUPPLIED" == "true" ) ]]
 then 
-	display_usage
-	echo !!\"$BACKUP_SSH_KEY\" does not exist
-	exit 3
+    display_usage
+    echo !!\"$BACKUP_SSH_KEY\" does not exist
+    exit 3
+else
+    BACKUP_SSH_KEY=`realpath $BACKUP_SSH_KEY`
 fi 
 
-if [[ $KEYS_SUPPLIED == "true" ]]
-then
-	BACKUP_SSH_KEY=`realpath $BACKUP_SSH_KEY`
-fi
-
-#ADMIN_EMAIL=admin@zap.me
-#ALERT_EMAIL=alerts@zap.me
-ALERT_EMAIL=e.f.oliveros@gmail.com
-ADMIN_EMAIL=e.f.oliveros@gmail.com
+ADMIN_EMAIL=admin@zap.me
+ALERT_EMAIL=alerts@zap.me
 VAGRANT=false
 BACKUP_HOST=backup.zap.me
 ## set deploy variables for production
-#DEPLOY_HOST=mainnet.zap.me
-DEPLOY_HOST=srv02.redrat.local
+DEPLOY_HOST=mainnet.zap.me
 DEPLOY_USER=root
 REMOTE_WAVES_NODES=nodes.wavesnodes.com
 TESTNET=
 ## set deploy variables for test
 if [[ ( $DEPLOY_TYPE == "test" ) ]]
 then 
-	#DEPLOY_HOST=testnet.zap.me
-	DEPLOY_HOST=srv01.redrat.local
-	DEPLOY_USER=root
-	REMOTE_WAVES_NODES=testnet1.wavesnodes.com
-	TESTNET=true
+    DEPLOY_HOST=testnet.zap.me
+    DEPLOY_USER=root
+    REMOTE_WAVES_NODES=testnet1.wavesnodes.com
+    TESTNET=true
 fi 
 
 ## create archive
@@ -109,9 +102,7 @@ fi
 ## print variables
 echo ":: DEPLOYMENT DETAILS ::"
 echo "$WARNING"
-echo "$WARNING"
 echo "   - TESTNET: $TESTNET"
-echo "   - KEYS: $KEYS_SUPPLIED"
 echo "   - ADMIN_EMAIL: $ADMIN_EMAIL"
 echo "   - ALERT_EMAIL: $ALERT_EMAIL"
 echo "   - DEPLOY_HOST: $DEPLOY_HOST"
@@ -129,9 +120,9 @@ read -p "Are you sure? " -n 1 -r
 echo # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-	## do dangerous stuff
-	echo ok lets go!!!
-	ansible-playbook --inventory "$DEPLOY_HOST," --user "$DEPLOY_USER" -v \
+    ## do dangerous stuff
+    echo ok lets go!!!
+    ansible-playbook --inventory "$DEPLOY_HOST," --user "$DEPLOY_USER" -v \
         --extra-vars "ADMIN_EMAIL=$ADMIN_EMAIL ALERT_EMAIL=$ALERT_EMAIL DEPLOY_HOST=$DEPLOY_HOST BACKUP_KEY='$BACKUP_KEY' BACKUP_SSH_KEY='$BACKUP_SSH_KEY' BACKUP_HOST=$BACKUP_HOST WEBHOOK_URL=$WEBHOOK_URL WEBHOOK_KEY=$WEBHOOK_KEY REMOTE_WAVES_NODES=$REMOTE_WAVES_NODES KEYS_SUPPLIED=$KEYS_SUPPLIED VAGRANT=$VAGRANT TESTNET=$TESTNET" \
         ansible/deploy.yml
 fi

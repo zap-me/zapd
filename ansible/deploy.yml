@@ -49,7 +49,7 @@
       ignore_errors: yes
 
 - import_playbook: backup.yml
-  when: VAGRANT == "false"
+  when: VAGRANT == "false" and KEYS_SUPPLIED
 - import_playbook: updates.yml
   when: VAGRANT == "false"
 - import_playbook: postfix.yml
