@@ -38,8 +38,12 @@ def setup_logging(level):
 
 def on_transfer_utx(wutx, txid, sig, pubkey, asset_id, timestamp, amount, fee, recipient, attachment):
     recipient = base58.b58encode(recipient)
+    try:
+        asset_id = base58.b58encode(asset_id)
+    except TypeError:
+        pass
     #logger.info(f"!transfer!: txid {txid}, recipient {recipient}, amount {amount}, attachment {attachment}")
-    if recipient == cfg.address:
+    if recipient == cfg.address and asset_id == cfg.asset_id:
         # create message
         sender = utils.address_from_public_key(pubkey)
         invoice_id = utils.extract_invoice_id(logger, attachment)
