@@ -10,7 +10,7 @@ import decimal
 
 import gevent
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, request, flash, abort
+from flask import Flask, render_template, request, flash, abort, redirect, url_for
 from flask_jsonrpc import JSONRPC
 from flask_jsonrpc.exceptions import OtherError
 import requests
@@ -25,6 +25,8 @@ from app_core import app, db
 from models import Transaction, Block, CreatedTransaction, DashboardHistory, Proposal, Payment
 import admin
 import utils
+
+from datetime import date
 
 cfg = config.read_cfg()
 jsonrpc = JSONRPC(app, "/api")
@@ -317,6 +319,35 @@ def dashboard_snapshot(cmd=None):
         return "ok"
     return "not needed right now"
 
+@app.route('/reporting_result', methods=['POST'])
+def reporting_result():
+    if request.method == 'POST':
+        result = request.form
+        min_date = result.get('min_when')
+        max_date = result.get('max_when')
+
+        if not min_date:
+            min_date = '2020-01-01'
+
+        if not max_date:
+            max_date = date.today()
+
+        #date_submitted = datetime.datetime.now()
+        #proposer = result.get('proposer')
+        #receiver = result.get('receiver')
+        #amount = result.get('amount')
+        #reason = result.get('reason')
+        #
+        #### This area is where it inserts to the proposals table in the DB
+        #data = Proposals(date_submitted=date_submitted, proposer=proposer, receiver=receiver, amount=amount, reason=reason, status=0) ### This adds to the proposals table
+        #db.session.add(data)
+        #db.session.commit() ### commits the changes.
+        #
+        print('Successful.') 
+        print('The min_date ' + str(min_date) +'.') ### Was testing.. Not needed to be here.
+        print('The max_date ' + str(max_date) +'.')
+        return redirect(url_for('Report.index'))
+
 #
 # JSON-RPC
 #
@@ -397,7 +428,7 @@ def validateaddress(address):
 
 class ZapWeb():
 
-    def __init__(self, addr="127.0.0.1", port=5000, no_waves=False):
+    def __init__(self, addr="0.0.0.0", port=5000, no_waves=False):
         self.addr = addr
         self.port = port
         self.runloop_greenlet = None

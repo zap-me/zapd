@@ -1,0 +1,19 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+    <h1>Custom List View</h1>
+    {{ super() }}
+
+    <table>
+    <thead>
+        <tr>
+        </tr>
+    </thead>
+    {% for data in some_data %}
+    <tbody>
+        <tr>
+            <td>{{ data[0:6] }}</td>
+	</tr>
+    </tbody>
+    {% endfor %}
+    </table>
+{% endblock body %}

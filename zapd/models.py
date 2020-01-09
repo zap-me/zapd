@@ -17,6 +17,8 @@ from markupsafe import Markup
 from app_core import app, db
 from utils import generate_key, is_email, is_mobile, is_address
 
+from flask_admin import BaseView
+
 ### Define zapsend models
 
 roles_users = db.Table(
@@ -603,3 +605,56 @@ class DashboardHistory(db.Model):
         now = time.time()
         week = 60 * 60 * 24 * 7
         return session.query(cls).filter(cls.date > now - week).all()
+
+### REPORTING
+class reports(BaseView):
+    @expose('/')
+    def index(self, methods=['GET']):
+        if request.method == 'GET':
+            return self.render('admin/reports.html')
+
+
+        #if request.method == 'POST': 
+        #    rows = db.engine.execute('''SELECT *
+        #                                FROM proposal
+        #                            ''')
+        #    data = [row[1:] for row in rows]
+        #    print(data)
+        #    return self.render('admin/reports.html', some_data=data)
+
+        
+        
+        #rows = db.engine.execute('''SELECT *
+        #                              FROM proposal'''
+        #                          )
+        #data = [row[1:] for row in rows]
+        #print(data)
+        #
+        #return self.render('admin/reports.html', some_data=data)
+
+        ##### PRINTS in series?
+        ##list_of_dicts = [dict((key, value) for key, value in row.items()) for row in rows]
+        ##print(list_of_dicts)
+        ##for data in list_of_dicts:
+        ##    print(data)
+
+        ##return self.render('admin/reports.html', some_data=data)
+
+class reportsRestrictedBaseView(reports):
+    def is_accessible(self):
+        if not current_user.is_active or not current_user.is_authenticated:
+            return False
+
+        if current_user.has_role('admin') or current_user.has_role('authorizer') or current_user.has_role('proposer'):
+            return True
+        return False
+
+    def handle_view(self, name, **kwargs):
+        if current_user.is_authenticated:
+            abort(403)
+        else:
+            # login
+            return redirect(url_for('security.login', next=request.url))
+        return False
+
+

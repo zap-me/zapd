@@ -1,0 +1,26 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+{{ super() }}
+<div class="row-fluid">
+    <div class="col-sm-8 col-sm-offset-2">
+        <div class="well">
+		<form method="POST" action="{{ url_for('reporting_result') }}">
+		<table>
+		    <col>
+		    <colgroup span="4"></colgroup>
+		    <tr>
+			<td rowspan="1"></td>
+		    </tr>
+		    <tr>
+			<th scope="row">From Date:</th>
+			<td style="padding-right: 160px"><input id="min_when" type="date" name="min_when" onblur="(this.type='text')" onfocus="(this.type='date')"></td>
+			 <th scope="row">To Date:</th>
+			 <td><input id="max_when" type="date" name="max_when" onblur="(this.type='text')" onfocus="(this.type='date')"></td>
+		</table>
+		</br>
+		<input type="submit" value="Send">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock body %}

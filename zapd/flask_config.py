@@ -29,4 +29,5 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Flask-Mail config
 MAIL_SENDGRID_API_KEY = "XXXX"
-SECURITY_EMAIL_SENDER = "admin@zap.me"
+#SECURITY_EMAIL_SENDER = "admin@zap.me"
+SECURITY_EMAIL_SENDER = "eoliveros@redratclothing.co.nz"
