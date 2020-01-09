@@ -18,6 +18,11 @@ from app_core import app, db
 from utils import generate_key, is_email, is_mobile, is_address
 
 from flask_admin import BaseView
+from flask_admin.babel import lazy_gettext
+from flask_admin.model import filters
+from flask_admin.contrib.sqla import tools
+from sqlalchemy.sql import not_, or_
+from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 
 ### Define zapsend models
 
@@ -202,10 +207,29 @@ def validate_csv(data):
         rows.append((recipient, message, amount))
     return rows
 
+class DateBetweenFilter(BaseSQLAFilter, filters.BaseDateBetweenFilter):
+    def __init__(self, column, name, options=None, data_type=None):
+        super(DateBetweenFilter, self).__init__(column,
+                                                name,
+                                                options,
+                                                data_type='daterangepicker')
+
+    def apply(self, query, value, alias=None):
+        start, end = value
+        return query.filter(self.get_column(alias).between(start, end))
+
+class FilterEqual(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.filter(self.get_column(alias) == value)
+
+    def operation(self):
+        return lazy_gettext('equals')
+
 class ProposalModelView(BaseModelView):
     can_create = False
     can_delete = False
     can_edit = False
+    can_export = True
 
     def _format_status_column(view, context, model, name):
         if model.status in (model.STATE_AUTHORIZED, model.STATE_DECLINED, model.STATE_EXPIRED):
@@ -254,6 +278,7 @@ class ProposalModelView(BaseModelView):
     column_formatters = {'status': _format_status_column, 'total': _format_total_column}
     form_columns = ['reason', 'recipient', 'message', 'amount', 'csvfile']
     form_extra_fields = {'recipient': TextField('Recipient'), 'message': TextField('Message'), 'amount': DecimalField('Amount', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
+    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status') ]
 
     def _validate_form(self, form):
         csv_rows = None
@@ -614,32 +639,6 @@ class reports(BaseView):
             return self.render('admin/reports.html')
 
 
-        #if request.method == 'POST': 
-        #    rows = db.engine.execute('''SELECT *
-        #                                FROM proposal
-        #                            ''')
-        #    data = [row[1:] for row in rows]
-        #    print(data)
-        #    return self.render('admin/reports.html', some_data=data)
-
-        
-        
-        #rows = db.engine.execute('''SELECT *
-        #                              FROM proposal'''
-        #                          )
-        #data = [row[1:] for row in rows]
-        #print(data)
-        #
-        #return self.render('admin/reports.html', some_data=data)
-
-        ##### PRINTS in series?
-        ##list_of_dicts = [dict((key, value) for key, value in row.items()) for row in rows]
-        ##print(list_of_dicts)
-        ##for data in list_of_dicts:
-        ##    print(data)
-
-        ##return self.render('admin/reports.html', some_data=data)
-
 class reportsRestrictedBaseView(reports):
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:
@@ -656,5 +655,4 @@ class reportsRestrictedBaseView(reports):
             # login
             return redirect(url_for('security.login', next=request.url))
         return False
-
 
