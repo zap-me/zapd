@@ -225,6 +225,33 @@ class FilterEqual(BaseSQLAFilter):
     def operation(self):
         return lazy_gettext('equals')
 
+class FilterNotEqual(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.filter(self.get_column(alias) != value)
+
+    def operation(self):
+        return lazy_gettext('not equal')
+
+class FilterGreater(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.filter(self.get_column(alias) > value)
+
+    def operation(self):
+        return lazy_gettext('greater than')
+
+class FilterSmaller(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.filter(self.get_column(alias) < value)
+
+    def operation(self):
+        return lazy_gettext('smaller than')
+
+class DateTimeGreaterFilter(FilterGreater, filters.BaseDateTimeFilter):
+    pass
+
+class DateSmallerFilter(FilterSmaller, filters.BaseDateFilter):
+    pass
+
 class ProposalModelView(BaseModelView):
     can_create = False
     can_delete = False
@@ -278,7 +305,7 @@ class ProposalModelView(BaseModelView):
     column_formatters = {'status': _format_status_column, 'total': _format_total_column}
     form_columns = ['reason', 'recipient', 'message', 'amount', 'csvfile']
     form_extra_fields = {'recipient': TextField('Recipient'), 'message': TextField('Message'), 'amount': DecimalField('Amount', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
-    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status') ]
+    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), DateTimeGreaterFilter(Proposal.date, 'Search Date'), DateSmallerFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status'), FilterNotEqual(Proposal.status, 'Search Status') ]
 
     def _validate_form(self, form):
         csv_rows = None
@@ -656,3 +683,14 @@ class reportsRestrictedBaseView(reports):
             return redirect(url_for('security.login', next=request.url))
         return False
 
+class ReportModelView(BaseModelView):
+    can_create = False
+    can_delete = False
+    can_edit = False
+    can_export = True
+
+    def is_accessible(self):
+        return (current_user.is_active and
+                current_user.is_authenticated)
+
+    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status') ]

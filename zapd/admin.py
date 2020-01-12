@@ -5,7 +5,8 @@ from flask_admin import helpers as admin_helpers
 from app_core import app, db
 from models import security, RestrictedModelView, ProposalModelView, UserModelView, \
     Role, User, Proposal, Transaction, CreatedTransaction, \
-    reportsRestrictedBaseView
+    reportsRestrictedBaseView, ReportModelView
+
 
 # Create admin
 admin = flask_admin.Admin(
@@ -24,6 +25,7 @@ admin.add_view(RestrictedModelView(CreatedTransaction, db.session))
 
 # Reports
 admin.add_view(reportsRestrictedBaseView(name='Report', endpoint='Report'))
+admin.add_view(ReportModelView(Proposal, db.session, name='Reporting', endpoint='Reporting'))
 #admin.add_view(ReportsRestrictedBaseView(name='Report', endpoint='Report'))
 
 # define a context processor for merging flask-admin's template context into the
