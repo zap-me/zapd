@@ -6,9 +6,12 @@ import csv
 from flask import redirect, url_for, request, flash
 from flask_security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, login_required, current_user
-from flask_admin import expose
+from flask_admin import expose, BaseView
+from flask_admin.babel import lazy_gettext
 from flask_admin.helpers import get_form_data
 from flask_admin.contrib import sqla
+from flask_admin.contrib.sqla.filters import BaseSQLAFilter
+from flask_admin.model import filters
 from wtforms.fields import TextField, DecimalField, FileField
 from wtforms import validators
 from marshmallow import Schema, fields
@@ -16,13 +19,6 @@ from markupsafe import Markup
 
 from app_core import app, db
 from utils import generate_key, is_email, is_mobile, is_address
-
-from flask_admin import BaseView
-from flask_admin.babel import lazy_gettext
-from flask_admin.model import filters
-from flask_admin.contrib.sqla import tools
-from sqlalchemy.sql import not_, or_
-from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 
 ### Define zapsend models
 
@@ -658,39 +654,3 @@ class DashboardHistory(db.Model):
         week = 60 * 60 * 24 * 7
         return session.query(cls).filter(cls.date > now - week).all()
 
-### REPORTING
-class reports(BaseView):
-    @expose('/')
-    def index(self, methods=['GET']):
-        if request.method == 'GET':
-            return self.render('admin/reports.html')
-
-
-class reportsRestrictedBaseView(reports):
-    def is_accessible(self):
-        if not current_user.is_active or not current_user.is_authenticated:
-            return False
-
-        if current_user.has_role('admin') or current_user.has_role('authorizer') or current_user.has_role('proposer'):
-            return True
-        return False
-
-    def handle_view(self, name, **kwargs):
-        if current_user.is_authenticated:
-            abort(403)
-        else:
-            # login
-            return redirect(url_for('security.login', next=request.url))
-        return False
-
-class ReportModelView(BaseModelView):
-    can_create = False
-    can_delete = False
-    can_edit = False
-    can_export = True
-
-    def is_accessible(self):
-        return (current_user.is_active and
-                current_user.is_authenticated)
-
-    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status') ]
