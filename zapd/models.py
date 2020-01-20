@@ -318,6 +318,7 @@ class ProposalModelView(BaseModelView):
     def _format_total_column_text_total(view, context, model, name):
         if model.status == model.STATE_DECLINED:
             return Markup('-')
+        total = 0
         for payment in model.payments:
             total += payment.amount
         total = total / 100
@@ -326,6 +327,7 @@ class ProposalModelView(BaseModelView):
     def _format_total_column_text_totalclaimed(view, context, model, name):
         if model.status == model.STATE_DECLINED:
             return Markup('-')
+        total_claimed = 0
         for payment in model.payments:
             total += payment.amount
             if payment.status == payment.STATE_SENT_FUNDS:
