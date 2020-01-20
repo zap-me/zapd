@@ -325,7 +325,7 @@ class ProposalModelView(BaseModelView):
             if payment.status == payment.STATE_SENT_FUNDS:
                 total_claimed += payment.amount
         total = str(total / 100)
-        #total_claimed = total_claimed / 100
+        total_claimed = str(total_claimed / 100)
         payments_url = url_for('.payments_view', proposal_id=model.id)
         if total_claimed == total:
             total=total
