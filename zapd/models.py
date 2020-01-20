@@ -329,7 +329,6 @@ class ProposalModelView(BaseModelView):
             return Markup('-')
         total_claimed = 0
         for payment in model.payments:
-            total += payment.amount
             if payment.status == payment.STATE_SENT_FUNDS:
                 total_claimed += payment.amount
         total_claimed = total_claimed / 100
