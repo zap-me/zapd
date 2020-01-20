@@ -322,13 +322,7 @@ class ProposalModelView(BaseModelView):
         total_claimed = 0
         for payment in model.payments:
             total += payment.amount
-            if payment.status == payment.STATE_SENT_FUNDS:
-                total_claimed += payment.amount
-        total = str(total / 100)
-        total_claimed = str(total_claimed / 100)
-        payments_url = url_for('.payments_view', proposal_id=model.id)
-        if total_claimed == total:
-            total=total
+        total = total / 100
         return Markup(total)
 
     def _format_total_column_text_totalclaimed(view, context, model, name):
@@ -340,11 +334,7 @@ class ProposalModelView(BaseModelView):
             total += payment.amount
             if payment.status == payment.STATE_SENT_FUNDS:
                 total_claimed += payment.amount
-        total = str(total / 100)
-        total_claimed = str(total_claimed / 100)
-        payments_url = url_for('.payments_view', proposal_id=model.id)
-        if total_claimed != total:
-            total_claimed=total_claimed
+        total_claimed = total_claimed / 100
         return Markup(total_claimed)
 
     column_default_sort = ('id', True)
