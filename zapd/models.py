@@ -275,6 +275,27 @@ class DateTimeGreaterFilter(FilterGreater, filters.BaseDateTimeFilter):
 class DateSmallerFilter(FilterSmaller, filters.BaseDateFilter):
     pass
 
+class FilterByProposerName(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.join(Proposal.proposer).filter(User.email == value)
+
+    def operation(self):
+        return u'equals'
+
+class FilterByAuthorizerName(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.join(Proposal.authorizer).filter(User.email == value)
+
+    def operation(self):
+        return u'equals'
+
+class FilterByCategory(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+        return query.join(Proposal.categories).filter(Category.name == value)
+
+    def operation(self):
+        return u'equals'
+
 class ProposalModelView(BaseModelView):
     can_create = False
     can_delete = False
@@ -361,7 +382,7 @@ class ProposalModelView(BaseModelView):
     column_labels = {'proposer': 'Proposed by', 'authorizer': 'Authorized by'}
     column_type_formatters = MY_DEFAULT_FORMATTERS
     column_formatters = {'proposer': _format_proposer_column, 'authorizer': _format_proposer_column, 'status': _format_status_column, 'total': _format_total_column}
-    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), DateTimeGreaterFilter(Proposal.date, 'Search Date'), DateSmallerFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status'), FilterNotEqual(Proposal.status, 'Search Status') ]
+    column_filters = [ DateBetweenFilter(Proposal.date, 'Search Date'), DateTimeGreaterFilter(Proposal.date, 'Search Date'), DateSmallerFilter(Proposal.date, 'Search Date'), FilterEqual(Proposal.status, 'Search Status'), FilterNotEqual(Proposal.status, 'Search Status'), FilterByProposerName(None, 'Search Proposer'), FilterByAuthorizerName(None, 'Search Authorizer'), FilterByCategory(None, 'Search Category') ]
     column_export_list = ('id', 'date', 'proposer', 'categories', 'authorizer', 'reason', 'date_authorized', 'date_expiry', 'status', 'total', 'claimed')
     column_formatters_export = {'total': _format_total_column_export, 'claimed': _format_totalclaimed_column_export}
     form_columns = ['reason', 'categories', 'recipient', 'message', 'amount', 'csvfile']
