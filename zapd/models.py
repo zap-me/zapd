@@ -19,7 +19,7 @@ from markupsafe import Markup
 from sqlalchemy import func
 
 from app_core import app, db
-from utils import generate_key, is_email, is_mobile, is_address
+from utils import generate_key, is_email, is_mobile, is_address, blockchain_transactions
 
 ### helper functions/classes
 
@@ -217,6 +217,33 @@ class AMWallet(db.Model):
         for wallet in session.query(cls).join(cls.devices).group_by(cls.id).having(func.count(AMDevice.id) > 1):
             ids.append(wallet.id)
         return session.query(cls).filter(cls.id.in_(ids))
+
+    @classmethod
+    def update_wallet_address(cls, session, user):
+        # update txs
+        limit = 100
+        ISSUER_ADDR = '3PCj4WTJ9abwYakwL4NBxiq1z4DmViFc5X3'
+        oldest_txid = None
+        txs = []
+        addrs = {}
+        while True:
+            have_tx = False
+            txs = blockchain_transactions(app.config["NODE_ADDRESS"], ISSUER_ADDR, limit, oldest_txid)
+            for tx in txs:
+                oldest_txid = tx["id"]
+                if tx["type"] == 4 and tx["assetId"] == app.config["ASSET_ID"]:
+                    if 'sender' in tx:
+                        sender = tx['sender']
+                        addrs[sender] = 1
+                    if 'recipient' in tx:
+                        recipient = tx['recipient']
+                        addrs[recipient] = 1
+                if have_tx or len(txs) < limit:
+                    break
+        for key, value in addrs:
+            address = key
+            session.add(AMWallet(address))
+        session.commit()
 
     def __repr__(self):
         return "<AMWallet %r>" % (self.address)
@@ -888,3 +915,10 @@ class AMWalletRestrictedModelView(sqla.ModelView):
     def execute(self):
         wallets = AMWallet.with_multiple_devices(db.session)
         return self.render('multiple_devices.html', wallets=wallets)
+
+    @expose("/update_address_list")
+    def update(self):
+        print('Executing the update')
+        return_url = self.get_url('.index_view')
+        #AMWallet.update_wallet_address(db.session)
+        return redirect(return_url)

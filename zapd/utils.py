@@ -122,6 +122,25 @@ def is_address(s):
     except:
         return False
 
+def blockchain_transactions(node, wallet_address, limit, after=None):
+    url = '%s/transactions/address/%s/limit/%s' % (node, wallet_address, limit)
+    if after:
+        url += '?after=%s' % after
+    print(':: requesting %s..' % url)
+    r = requests.get(url)
+    if r.status_code != 200:
+        print('ERROR: status code is %d' % r.status_code)
+    txs = r.json()[0]
+    print(':: retrieved %d records' % len(txs))
+    txs_result = []
+    for tx in txs:
+        if 'attachment' in tx:
+            attachment = tx['attachment']
+            if attachment:
+                tx['attachment'] = base58.b58decode(attachment).decode('utf-8')
+        txs_result.append(tx)
+    return txs_result
+
 if __name__ == "__main__":
     import sys
     key = sys.argv[1]
