@@ -19,7 +19,7 @@ from markupsafe import Markup
 from sqlalchemy import func
 
 from app_core import app, db
-from utils import generate_key, is_email, is_mobile, is_address, blockchain_transactions
+from utils import generate_key, is_email, is_mobile, is_address, issuer_address, blockchain_transactions
 
 ### helper functions/classes
 
@@ -222,13 +222,13 @@ class AMWallet(db.Model):
     def initial_wallet_addresses(cls, session):
         # update txs
         limit = 100
-        ISSUER_ADDR = '3PCj4WTJ9abwYakwL4NBxiq1z4DmViFc5X3'
+        issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"]:
         oldest_txid = None
         txs = []
         addrs = {}
         while True:
             have_tx = False
-            txs = blockchain_transactions(app.config["NODE_ADDRESS"], ISSUER_ADDR, limit, oldest_txid)
+            txs = blockchain_transactions(app.config["NODE_ADDRESS"], issuer_addr, limit, oldest_txid)
             for tx in txs:
                 oldest_txid = tx["id"]
                 if tx["type"] == 4 and tx["assetId"] == app.config["ASSET_ID"]:
