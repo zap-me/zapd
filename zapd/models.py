@@ -918,7 +918,7 @@ class AMWalletRestrictedModelView(sqla.ModelView):
 
     @expose("/update_address_list")
     def update(self):
-        print('Executing the update')
+        #print('Executing the update')
         return_url = self.get_url('.index_view')
-        #AMWallet.update_wallet_address(db.session)
+        AMWallet.update_wallet_address(db.session)
         return redirect(return_url)
