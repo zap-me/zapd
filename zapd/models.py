@@ -219,7 +219,7 @@ class AMWallet(db.Model):
         return session.query(cls).filter(cls.id.in_(ids))
 
     @classmethod
-    def update_wallet_address(cls, session, user):
+    def initial_wallet_addresses(cls, session):
         # update txs
         limit = 100
         ISSUER_ADDR = '3PCj4WTJ9abwYakwL4NBxiq1z4DmViFc5X3'
