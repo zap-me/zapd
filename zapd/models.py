@@ -222,7 +222,7 @@ class AMWallet(db.Model):
     def initial_wallet_addresses(cls, session):
         # update txs
         limit = 100
-        issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"]:
+        issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"])
         oldest_txid = None
         txs = []
         addrs = {}
