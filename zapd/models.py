@@ -195,10 +195,6 @@ class AMDevice(db.Model):
         self.brand = brand
         self.device_id = device_id
 
-    @classmethod
-    def from_device_id(cls, session, device_id):
-        return session.query(cls).filter(cls.device_id == device_id).first()
-
     def __repr__(self):
         return "<AMDevice %r %r>" % (self.brand, self.device_id)
 
@@ -210,6 +206,10 @@ class AMWallet(db.Model):
 
     def __init__(self, address):
         self.address = address
+
+    @classmethod
+    def from_address(cls, session, address):
+        return session.query(cls).filter(cls.address == address).first()
 
     @classmethod
     def with_multiple_devices(cls, session):
@@ -241,10 +241,9 @@ class AMWallet(db.Model):
                 if have_tx or len(txs) < limit:
                     break
         for key, value in addrs:
-            address = key
-            wallet = address
-            session.add(AMWallet(address))
-            session.add(AMDevice(wallet, 'unknown app version', 'unknown os', 'unknown os version', 'unknown manufacturer', 'unknown brand', 'unknown device id')
+            wallet = AMWAllet(key)
+            session.add(wallet)
+            session.add(AMDevice(wallet, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a'))
         session.commit()
 
     def __repr__(self):
@@ -920,7 +919,8 @@ class AMWalletRestrictedModelView(sqla.ModelView):
 
     @expose("/update_address_list")
     def update(self):
-        #print('Executing the update')
+    #print('Executing the update')
         return_url = self.get_url('.index_view')
         AMWallet.update_wallet_address(db.session)
         return redirect(return_url)
+                                        
