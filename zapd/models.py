@@ -195,6 +195,10 @@ class AMDevice(db.Model):
         self.brand = brand
         self.device_id = device_id
 
+    @classmethod
+    def from_device_id(cls, session, device_id):
+        return session.query(cls).filter(cls.device_id == device_id).first()
+
     def __repr__(self):
         return "<AMDevice %r %r>" % (self.brand, self.device_id)
 
@@ -206,10 +210,6 @@ class AMWallet(db.Model):
 
     def __init__(self, address):
         self.address = address
-
-    @classmethod
-    def from_address(cls, session, address):
-        return session.query(cls).filter(cls.address == address).first()
 
     @classmethod
     def with_multiple_devices(cls, session):
@@ -242,7 +242,9 @@ class AMWallet(db.Model):
                     break
         for key, value in addrs:
             address = key
+            wallet = address
             session.add(AMWallet(address))
+            session.add(AMDevice(wallet, 'unknown app version', 'unknown os', 'unknown os version', 'unknown manufacturer', 'unknown brand', 'unknown device id')
         session.commit()
 
     def __repr__(self):
