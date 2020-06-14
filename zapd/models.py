@@ -221,27 +221,34 @@ class AMWallet(db.Model):
     @classmethod
     def initial_wallet_addresses(cls, session):
         # update txs
-        limit = 100
-        issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"])
+        node = "http://nodes.wavesnodes.com"
+        asset_id = "9R3iLi4qGLVWKc16Tg98gmRvgg1usGEYd7SgC1W5D6HB"
+        limit = 1000
+        #issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"])
+        issuer_addr = issuer_address(node, asset_id)
         oldest_txid = None
+        txs_count = None
         txs = []
         addrs = {}
         while True:
             have_tx = False
-            txs = blockchain_transactions(app.config["NODE_ADDRESS"], issuer_addr, limit, oldest_txid)
+            txs = blockchain_transactions(node, issuer_addr, limit, oldest_txid)
             for tx in txs:
                 oldest_txid = tx["id"]
-                if tx["type"] == 4 and tx["assetId"] == app.config["ASSET_ID"]:
+                #if tx["type"] == 4 and tx["assetId"] == app.config["ASSET_ID"]:
+                if tx["type"] == 4 and tx["assetId"] == asset_id:
                     if 'sender' in tx:
                         sender = tx['sender']
                         addrs[sender] = 1
                     if 'recipient' in tx:
                         recipient = tx['recipient']
                         addrs[recipient] = 1
-                if have_tx or len(txs) < limit:
-                    break
-        for key, value in addrs:
-            wallet = AMWAllet(key)
+
+            if len(txs) < limit:
+                break
+        
+        for key, value in addrs.items():
+            wallet = AMWallet(key)
             session.add(wallet)
             session.add(AMDevice(wallet, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a'))
         session.commit()
@@ -917,10 +924,10 @@ class AMWalletRestrictedModelView(sqla.ModelView):
         wallets = AMWallet.with_multiple_devices(db.session)
         return self.render('multiple_devices.html', wallets=wallets)
 
-    @expose("/update_address_list")
+    @expose('/update_address_list')
     def update(self):
-    #print('Executing the update')
-        return_url = self.get_url('.index_view')
-        AMWallet.update_wallet_address(db.session)
-        return redirect(return_url)
-                                        
+    #prnt('Executing the update')
+        #return_url = self.get_url('.index_view')
+        AMWallet.initial_wallet_addresses(db.session)
+        #return redirect(reutrn_url)
+        return self.render('amdevice_list.html')

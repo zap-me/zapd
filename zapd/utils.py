@@ -122,13 +122,32 @@ def is_address(s):
     except:
         return False
 
-def issuer_address(node, asset_id):
-    url = '%s/transactions/info/%s' % (node, asset_id)
-    print(':: requesting %s..' % url)
-    r = requests.get(url)
-    if r.status_code != 200:
-        print('ERROR: status code is %d' % r.status_code)
-    info = r.json()[0]
+def initial_wallet_addresses(cls, session):
+    # update txs
+    limit = 100
+    issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"])
+    oldest_txid = None
+    txs = []
+    addrs = {}
+    while True:
+        have_tx = False
+        txs = blockchain_transactions(app.config["NODE_ADDRESS"], issuer_addr, limit, oldest_txid)
+        for tx in txs:
+            oldest_txid = tx["id"]
+            if tx["type"] == 4 and tx["assetId"] == app.config["ASSET_ID"]:
+                if 'sender' in tx:
+                    sender = tx['sender']
+                    addrs[sender] = 1
+                if 'recipient' in tx:
+                    recipient = tx['recipient']
+                    addrs[recipient] = 1
+            if have_tx or len(txs) < limit:
+                break
+    for key, value in addrs:
+        wallet = AMWAllet(key)
+        session.add(wallet)
+        session.add(AMDevice(wallet, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a'))
+    session.commit()
 
 def issuer_address(node, asset_id):
     url = '%s/transactions/info/%s' % (node, asset_id)
@@ -153,12 +172,13 @@ def blockchain_transactions(node, wallet_address, limit, after=None):
     print(':: retrieved %d records' % len(txs))
     txs_result = []
     for tx in txs:
-        if 'attachment' in tx:
-            attachment = tx['attachment']
-            if attachment:
-                tx['attachment'] = base58.b58decode(attachment).decode('utf-8')
         txs_result.append(tx)
+    
     return txs_result
+
+def testing1():
+    test1 = 'This is a print'
+    return test1
 
 if __name__ == "__main__":
     import sys
