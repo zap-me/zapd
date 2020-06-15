@@ -155,9 +155,9 @@ def issuer_address(node, asset_id):
     r = requests.get(url)
     if r.status_code != 200:
         print('ERROR: status code is %d' % r.status_code)
+        return None
     info = r.json()
     issuer_addr = info['sender']
-
     return issuer_addr
 
 def blockchain_transactions(node, wallet_address, limit, after=None):

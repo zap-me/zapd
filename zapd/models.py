@@ -2,6 +2,7 @@ import time
 import datetime
 import decimal
 import csv
+import logging
 
 from flask import redirect, url_for, request, flash, has_app_context, g
 from flask_security import Security, SQLAlchemyUserDatastore, \
@@ -17,9 +18,14 @@ from wtforms import validators
 from marshmallow import Schema, fields
 from markupsafe import Markup
 from sqlalchemy import func
+import requests
 
 from app_core import app, db
+import config
 from utils import generate_key, is_email, is_mobile, is_address, issuer_address, blockchain_transactions
+
+cfg = config.read_cfg()
+logger = logging.getLogger(__name__)
 
 ### helper functions/classes
 
@@ -219,39 +225,45 @@ class AMWallet(db.Model):
         return session.query(cls).filter(cls.id.in_(ids))
 
     @classmethod
-    def initial_wallet_addresses(cls, session):
+    def initialize_wallet_addresses(cls, session):
         # update txs
-        node = "http://nodes.wavesnodes.com"
-        asset_id = "9R3iLi4qGLVWKc16Tg98gmRvgg1usGEYd7SgC1W5D6HB"
-        limit = 1000
-        #issuer_addr = issuer_address(app.config["NODE_ADDRESS"], app.config["ASSET_ID"])
-        issuer_addr = issuer_address(node, asset_id)
-        oldest_txid = None
-        txs_count = None
-        txs = []
         addrs = {}
-        while True:
-            have_tx = False
-            txs = blockchain_transactions(node, issuer_addr, limit, oldest_txid)
-            for tx in txs:
-                oldest_txid = tx["id"]
-                #if tx["type"] == 4 and tx["assetId"] == app.config["ASSET_ID"]:
-                if tx["type"] == 4 and tx["assetId"] == asset_id:
-                    if 'sender' in tx:
-                        sender = tx['sender']
-                        addrs[sender] = 1
-                    if 'recipient' in tx:
-                        recipient = tx['recipient']
-                        addrs[recipient] = 1
-
-            if len(txs) < limit:
-                break
-        
+        try:
+            node = cfg.node_http_base_url
+            issuer_addr = issuer_address(node, cfg.asset_id)
+            if not issuer_addr:
+                return False
+            limit = 1000
+            oldest_txid = None
+            txs_count = None
+            txs = []
+            while True:
+                have_tx = False
+                txs = blockchain_transactions(node, issuer_addr, limit, oldest_txid)
+                for tx in txs:
+                    oldest_txid = tx["id"]
+                    if tx["type"] == 4 and tx["assetId"] == cfg.asset_id:
+                        if 'sender' in tx:
+                            addrs[tx['sender']] = 1
+                        if 'recipient' in tx:
+                            addrs[tx['recipient']] = 1
+                # reached end of transaction history for this address
+                if len(txs) < limit:
+                    break
+        except requests.exceptions.ConnectionError as ex:
+            logger.error(ex)
+            return False
+        # create all the AMWallet and AMDevice db entries
         for key, value in addrs.items():
             wallet = AMWallet(key)
             session.add(wallet)
             session.add(AMDevice(wallet, 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a'))
         session.commit()
+        return True
+
+    @classmethod
+    def is_empty(cls, session):
+        return not session.query(cls).first()
 
     def __repr__(self):
         return "<AMWallet %r>" % (self.address)
@@ -924,10 +936,14 @@ class AMWalletRestrictedModelView(sqla.ModelView):
         wallets = AMWallet.with_multiple_devices(db.session)
         return self.render('multiple_devices.html', wallets=wallets)
 
-    @expose('/update_address_list')
+    @expose('/initialize_address_list')
     def update(self):
-    #prnt('Executing the update')
-        #return_url = self.get_url('.index_view')
-        AMWallet.initial_wallet_addresses(db.session)
-        #return redirect(reutrn_url)
-        return self.render('amdevice_list.html')
+        if AMWallet.is_empty(db.session):
+            if AMWallet.initialize_wallet_addresses(db.session):
+                flash('Initialized wallet addresses')
+            else:
+                flash('Failed to initialize wallet addresses', 'error')
+        else:
+            flash('Table is not empty', 'error')
+        return_url = self.get_url('.index_view')
+        return redirect(return_url)
