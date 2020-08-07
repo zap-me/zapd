@@ -268,6 +268,20 @@ class AMWallet(db.Model):
     def __repr__(self):
         return "<AMWallet %r>" % (self.address)
 
+class AMDeviceResolution(db.Model):
+    __tablename__ = 'amdeviceresolution'
+    id = db.Column(db.Integer(), primary_key=True)
+    amdevice_id = db.Column(db.Integer, db.ForeignKey('amdevice.id'), nullable=False)
+    device = db.relationship('AMDevice', backref=db.backref('device_resolution', lazy='joined'))
+    resolution = db.Column(db.String())
+
+    def __init__(self, amdevice_id, resolution):
+       self.amdevice_id = amdevice_id
+       self.resolution = resolution
+
+    def __repr__(self):
+        return "<AMDeviceResolution %r %r>" % (self.amdevice_id, self.resolution)
+
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)

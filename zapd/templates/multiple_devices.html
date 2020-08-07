@@ -1,14 +1,44 @@
 {% extends 'admin/master.html' %}
 
 {% block body %}
+<style>
+table, th, td {
+  border: 2px solid black;
+}
+</style>
+
+<script>
+</script>
+
 {% for wallet in wallets %}
 <div class="col-lg-12">
     <strong>Address: {{wallet.address}}</strong>
     <ul>
-        {% for device in wallet.devices %}
-        <li>{{device.date}} -- {{device.os}} {{device.os_version}}, {{device.manufacturer}} {{device.brand}} {{device.device_id}}, app version {{device.app_version}}</li>
-        {% endfor %}
+	<table>
+	  <tr>
+            <th> Created Date </th>
+	    <th> Device OS </th>
+	    <th> Device OS Version </th>
+	    <th> Device Manufacturer</th>
+	    <th> Brand</th>
+	    <th> Device ID</th>
+	    <th> Zap App Version</th>
+	  </tr>
+          {% for device in wallet.devices %}
+          <tr>
+            <td>{{device.date}}</td>
+            <td>{{device.os}}</td>
+	    <td>{{device.os_version}}</td>
+	    <td>{{device.manufacturer}}</td>
+            <td>{{device.brand}}</td>
+            <td>{{device.device_id}}</td>
+            <td>{{device.app_version}}</td>
+	    <td><button type="button" onclick="alert('TODO. Still need to figure out what to do from here. The AMDevice id for this line is {{ device.id }}')">Resolve</button></td>
+	  </tr>
+          {% endfor %}
+	</table>
     </ul>
 </div>
+
 {% endfor %}
 {% endblock %}
