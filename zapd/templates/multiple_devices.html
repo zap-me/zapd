@@ -5,21 +5,27 @@
 table, th, td {
   border: 2px solid black;
 }
+/* The popup form - hidden by default */
+.form-popup {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  right: 15px;
+  border: 3px solid #f1f1f1;
+  z-index: 9;
+}
 </style>
 
 <p id="poc_demo"></p>
 
 <script>
-function myFunction(deviceID, CreatedDate, deviceOS) {
-  var msg;
-  var reply = prompt("Please enter reason for resolving: ", "");
-  if (reply == null || reply == "") {
-    msg = "User provided no explanation. Cancelling request for id: '" + deviceID + "'";
-  } else {
-	  msg = "Created Date "+ CreatedDate + " device os is " + deviceOS + " Reason for resolving device " + deviceID + " is: '"+ reply + "'";
+function openForm(deviceid, CreatedDate, deviceOS) {
+	  //document.write(deviceid+', '+CreatedDate+', '+deviceOS); // this appears to work displays in a new screen the id, creationdate, and deviceos
+	  document.getElementById("myForm").style.display = "block";
+}
 
-  }
-  document.getElementById("poc_demo").innerHTML = msg;
+function closeForm() {
+	  document.getElementById("myForm").style.display = "none";
 }
 
 </script>
@@ -49,11 +55,29 @@ function myFunction(deviceID, CreatedDate, deviceOS) {
             <td>{{device.brand}}</td>
             <td>{{device.device_id}}</td>
             <td>{{device.app_version}}</td>
-	    <td><button type="button" onclick="myFunction('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution</button></td>
+	    <td>
+		    <button class="open-button" onclick="openForm('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution</button>
+	    </td>
 	  </tr>
           {% endfor %}
 	</table>
     </ul>
+</div>
+
+<div class="form-popup" id="myForm">
+  <form action="testing" class="form-container">
+  <!-- 
+	  TODO: 
+	  - NEED TO FIND A WAY TO GET THE JS VARIABLES TO BE USED IN THE FORM.
+	  - NEED TO SUBMIT THE VARIABLES INCLUDING RESOLUTION TO THE DB.
+  
+  -->
+    <label for="resolution"><b>Resolution:</b></label>
+    <input type="text" placeholder="Resolution" name="resolution" required>
+
+    <button type="submit" class="btn">Submit</button>
+    <button type="button" class="btn cancel" onclick="closeForm()">Close</button>
+  </form>
 </div>
 
 {% endfor %}
