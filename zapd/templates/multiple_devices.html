@@ -20,14 +20,13 @@ table, th, td {
 
 <script>
 function openForm(deviceid, CreatedDate, deviceOS) {
-	  //document.write(deviceid+', '+CreatedDate+', '+deviceOS); // this appears to work displays in a new screen the id, creationdate, and deviceos
-	  document.getElementById("myForm").style.display = "block";
+  //document.write(deviceid+', '+CreatedDate+', '+deviceOS); // this appears to work displays in a new screen the id, creationdate, and deviceos
+  document.getElementById("myForm").style.display = "block";
 }
 
 function closeForm() {
-	  document.getElementById("myForm").style.display = "none";
+  document.getElementById("myForm").style.display = "none";
 }
-
 </script>
 
 {% for wallet in wallets %}
@@ -35,49 +34,49 @@ function closeForm() {
     <strong>Address: {{wallet.address}}</strong>
     <ul>
 	<table>
-	  <tr>
-	    <th> id </th>
-            <th> Created Date </th>
-	    <th> Device OS </th>
-	    <th> Device OS Version </th>
-	    <th> Device Manufacturer</th>
-	    <th> Brand</th>
-	    <th> Device ID</th>
-	    <th> Zap App Version</th>
-	  </tr>
-          {% for device in wallet.devices %}
-          <tr>
-            <td>{{device.id}}</td>
-            <td>{{device.date}}</td>
-            <td>{{device.os}}</td>
-	    <td>{{device.os_version}}</td>
-	    <td>{{device.manufacturer}}</td>
-            <td>{{device.brand}}</td>
-            <td>{{device.device_id}}</td>
-            <td>{{device.app_version}}</td>
-	    <td>
-		    <button class="open-button" onclick="openForm('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution</button>
-	    </td>
-	  </tr>
-          {% endfor %}
-	</table>
+	    <tr>
+                <th> id </th>
+                <th> Created Date </th>
+                <th> Device OS </th>
+                <th> Device OS Version </th>
+                <th> Device Manufacturer</th>
+                <th> Brand</th>
+                <th> Device ID</th>
+                <th> Zap App Version</th>
+            </tr>
+            {% for device in wallet.devices %}
+            <tr>
+                <td>{{device.id}}</td>
+                <td>{{device.date}}</td>
+                <td>{{device.os}}</td>
+                <td>{{device.os_version}}</td>
+                <td>{{device.manufacturer}}</td>
+                <td>{{device.brand}}</td>
+                <td>{{device.device_id}}</td>
+                <td>{{device.app_version}}</td>
+                <td>
+	            <!--<button class="open-button" onclick="openForm()">Resolution</button>-->
+	            <button class="open-button" onclick="openForm('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </ul>
 </div>
 
 <div class="form-popup" id="myForm">
-  <form action="testing" class="form-container">
-  <!-- 
+    <form action="testing" class="form-container" >
+    <!-- 
 	  TODO: 
-	  - NEED TO FIND A WAY TO GET THE JS VARIABLES TO BE USED IN THE FORM.
+	  - NEED TO FIND A WAY TO GET THE JS VARIABLES FROM PREVIOUS PAGE TO BE USED IN THIS FORM.
+	    ie. device.id,device,date,etc... 
 	  - NEED TO SUBMIT THE VARIABLES INCLUDING RESOLUTION TO THE DB.
-  
-  -->
-    <label for="resolution"><b>Resolution:</b></label>
-    <input type="text" placeholder="Resolution" name="resolution" required>
-
-    <button type="submit" class="btn">Submit</button>
-    <button type="button" class="btn cancel" onclick="closeForm()">Close</button>
-  </form>
+    -->
+        <label for="resolution"><b>Resolution:</b></label>
+        <input type="text" placeholder="Resolution" name="resolution" required>
+        <button type="submit" class="btn">Submit</button>
+        <button type="button" class="btn cancel" onclick="closeForm()">Close</button>
+    </form>
 </div>
 
 {% endfor %}

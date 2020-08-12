@@ -273,7 +273,7 @@ class AMDeviceResolution(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     amdevice_id = db.Column(db.Integer, db.ForeignKey('amdevice.id'), nullable=False)
     device = db.relationship('AMDevice', backref=db.backref('device_resolution', lazy='joined'))
-    resolution = db.Column(db.String())
+    resolution = db.Column(db.String(), nullable=False)
 
     def __init__(self, amdevice_id, resolution):
        self.amdevice_id = amdevice_id
@@ -961,3 +961,8 @@ class AMWalletRestrictedModelView(sqla.ModelView):
             flash('Table is not empty', 'error')
         return_url = self.get_url('.index_view')
         return redirect(return_url)
+
+    @expose('testing', methods=['GET', 'POST'])
+    def test1(self):
+        wallets = AMWallet.with_multiple_devices(db.session)
+        return self.render('multiple_devices.html', wallets=wallets)
