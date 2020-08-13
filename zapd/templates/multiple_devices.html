@@ -19,13 +19,27 @@ table, th, td {
 <p id="poc_demo"></p>
 
 <script>
+function myFunction(deviceID, CreatedDate, deviceOS) {
+  var msg;
+  var reply = prompt("Please enter reason for resolving: ", "");
+  if (reply == null || reply == "") {
+    msg = "User provided no explanation. Cancelling request for id: '" + deviceID + "'";
+  } else {
+	  msg = "Created Date "+ CreatedDate + " device os is " + deviceOS + " Reason for resolving device " + deviceID + " is: '"+ reply + "'";
+  }
+  document.getElementById("poc_demo").innerHTML = msg;
+}
+
+function submit_form() {
+  document.getElementById("myForm").submit();
+}
+
 function openForm(deviceid, CreatedDate, deviceOS) {
-  //document.write(deviceid+', '+CreatedDate+', '+deviceOS); // this appears to work displays in a new screen the id, creationdate, and deviceos
-  document.getElementById("myForm").style.display = "block";
+	  document.getElementById("myForm").style.display = "block";
 }
 
 function closeForm() {
-  document.getElementById("myForm").style.display = "none";
+	  document.getElementById("myForm").style.display = "none";
 }
 </script>
 
@@ -33,8 +47,8 @@ function closeForm() {
 <div class="col-lg-12">
     <strong>Address: {{wallet.address}}</strong>
     <ul>
-	<table>
-	    <tr>
+        <table>
+            <tr>
                 <th> id </th>
                 <th> Created Date </th>
                 <th> Device OS </th>
@@ -49,32 +63,43 @@ function closeForm() {
                 <td>{{device.id}}</td>
                 <td>{{device.date}}</td>
                 <td>{{device.os}}</td>
-                <td>{{device.os_version}}</td>
-                <td>{{device.manufacturer}}</td>
+    	        <td>{{device.os_version}}</td>
+    	        <td>{{device.manufacturer}}</td>
                 <td>{{device.brand}}</td>
                 <td>{{device.device_id}}</td>
                 <td>{{device.app_version}}</td>
                 <td>
-	            <!--<button class="open-button" onclick="openForm()">Resolution</button>-->
-	            <button class="open-button" onclick="openForm('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution</button>
+                    <button type="button" onclick="myFunction('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution</button>
                 </td>
-            </tr>
+    	        <td>
+    	            <button class="open-button" onclick="openForm('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution2</button>
+    	        </td>
+    	    <!--
+                <td>
+                  <form id="myForm2" action="testing">
+                    Reason:<br>
+                    <input type="text" name="reason" size=16>
+                    <input type="button" onclick="myTest2(reason)" value="Submit" style="float: right;">
+                  </form>
+                </td>
+    	    -->
+	    </tr>
             {% endfor %}
-        </table>
+	</table>
     </ul>
 </div>
 
 <div class="form-popup" id="myForm">
-    <form action="testing" class="form-container" >
+    <form action="testing" class="form-container">
     <!-- 
-	  TODO: 
-	  - NEED TO FIND A WAY TO GET THE JS VARIABLES FROM PREVIOUS PAGE TO BE USED IN THIS FORM.
-	    ie. device.id,device,date,etc... 
-	  - NEED TO SUBMIT THE VARIABLES INCLUDING RESOLUTION TO THE DB.
+  	TODO: 
+  	  - NEED TO FIND A WAY TO GET THE JS VARIABLES TO BE USED IN THE FORM.
+  	  - NEED TO SUBMIT THE VARIABLES INCLUDING RESOLUTION TO THE DB.
     -->
         <label for="resolution"><b>Resolution:</b></label>
         <input type="text" placeholder="Resolution" name="resolution" required>
-        <button type="submit" class="btn">Submit</button>
+        
+        <button type="submit" class="btn" onclick="submit_form()">Submit</button>
         <button type="button" class="btn cancel" onclick="closeForm()">Close</button>
     </form>
 </div>
