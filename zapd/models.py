@@ -962,7 +962,8 @@ class AMWalletRestrictedModelView(sqla.ModelView):
         return_url = self.get_url('.index_view')
         return redirect(return_url)
 
-    @expose('testing', methods=['GET', 'POST'])
-    def test1(self):
-        wallets = AMWallet.with_multiple_devices(db.session)
-        return self.render('multiple_devices.html', wallets=wallets)
+#    @expose('testing', methods=['GET', 'POST'])
+#    def test1(self):
+#        #wallets = AMWallet.with_multiple_devices(db.session)
+#        #return self.render('multiple_devices.html', wallets=wallets)
+#        return 'Getting to testing page'

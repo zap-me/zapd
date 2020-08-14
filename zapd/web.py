@@ -209,6 +209,33 @@ def int2zap(num):
 def index():
     return render_template("index.html")
 
+@app.route("/testing", methods=["POST"])
+def testing():
+    ID = request.form['ID']
+    CreatedDate = request.form['CreatedDate']
+    DeviceOS = request.form['DeviceOS']
+    OSVersion = request.form['OSVersion']
+    DeviceManufacturer = request.form['DeviceManufacturer']
+    DeviceBrand = request.form['DeviceBrand']
+    DeviceID = request.form['DeviceID']
+    AppVersion = request.form['AppVersion']
+    Resolution = request.form['resolution']
+    #return (ID)
+    print (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+DeviceManufacturer+', '+DeviceBrand+', '+DeviceID+', '+AppVersion+', '+Resolution)
+    return (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+Resolution)
+
+@app.route("/resolution", methods=["POST"])
+def resolution():
+    ID = request.form['ID']
+    CreatedDate = request.form['CreatedDate']
+    DeviceOS = request.form['DeviceOS']
+    OSVersion = request.form['OSVersion']
+    DeviceManufacturer = request.form['DeviceManufacturer']
+    DeviceBrand = request.form['DeviceBrand']
+    DeviceID = request.form['DeviceID']
+    AppVersion = request.form['AppVersion']
+    return render_template
+
 @app.route("/internal/process_proposals")
 def process_proposals():
     # set expired
@@ -436,7 +463,8 @@ def validateaddress(address):
 
 class ZapWeb():
 
-    def __init__(self, addr="127.0.0.1", port=5000, no_waves=False):
+    def __init__(self, addr="0.0.0.0", port=5000, no_waves=False):
+    #def __init__(self, addr="127.0.0.1", port=5000, no_waves=False):
         self.addr = addr
         self.port = port
         self.runloop_greenlet = None

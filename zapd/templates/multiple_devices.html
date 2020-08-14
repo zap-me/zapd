@@ -74,15 +74,22 @@ function closeForm() {
     	        <td>
     	            <button class="open-button" onclick="openForm('{{device.id}}','{{device.date}}','{{device.os}}')">Resolution2</button>
     	        </td>
-    	    <!--
                 <td>
-                  <form id="myForm2" action="testing">
-                    Reason:<br>
-                    <input type="text" name="reason" size=16>
-                    <input type="button" onclick="myTest2(reason)" value="Submit" style="float: right;">
+                  <form action="/testing" method="POST">
+	            <input type="hidden" placeholder="ID" id="ID" name="ID" value='{{device.id}}'>
+	            <input type="hidden" placeholder="CreatedDate" id="CreatedDate" name="CreatedDate" value='{{device.date}}'>
+	            <input type="hidden" placeholder="DeviceOS" id="DeviceOS" name="DeviceOS" value='{{device.os}}'>
+	            <input type="hidden" placeholder="OSVersion" id="OSVersion" name="OSVersion" value='{{device.os_version}}'>
+	            <input type="hidden" placeholder="DeviceManufacturer" id="DeviceManufacturer" name="DeviceManufacturer" value='{{device.manufacturer}}'>
+	            <input type="hidden" placeholder="DeviceBrand" id="DeviceBrand" name="DeviceBrand" value='{{device.brand}}'>
+	            <input type="hidden" placeholder="DeviceID" id="DeviceID" name="DeviceID" value='{{device.device_id}}'>
+	            <input type="hidden" placeholder="AppVersion" id="AppVersion" name="AppVersion" value='{{device.app_version}}'>
+                    Reason:
+                    <input type="text" placeholder="resolution" id="resolution" name="resolution" size=32 required>
+		    <!--<input type="button" onclick="myTest2(reason)" value="Submit" style="float: right;">-->
+		    <button type="submit" style="float: right;">Submit</button>
                   </form>
                 </td>
-    	    -->
 	    </tr>
             {% endfor %}
 	</table>
