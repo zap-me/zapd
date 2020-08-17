@@ -282,6 +282,11 @@ class AMDeviceResolution(db.Model):
     def __repr__(self):
         return "<AMDeviceResolution %r %r>" % (self.amdevice_id, self.resolution)
 
+    @classmethod
+    def from_amdevice_id(cls, session, amdevice_id):
+        return session.query(cls).filter(cls.amdevice_id == amdevice_id).first()
+
+
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
