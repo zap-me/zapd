@@ -220,30 +220,17 @@ def testing():
     DeviceID = request.form['DeviceID']
     AppVersion = request.form['AppVersion']
     Resolution = request.form['resolution']
-    ##return (ID)
-    #print (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+DeviceManufacturer+', '+DeviceBrand+', '+DeviceID+', '+AppVersion+', '+Resolution)
+    ##print (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+DeviceManufacturer+', '+DeviceBrand+', '+DeviceID+', '+AppVersion+', '+Resolution)
+    #locating_amdevice = AMDevice.locate_amdevice(db.session, ID)
+    #db.session.delete(locating_amdevice) ### Could delete the record and that would prevent it from showing
     new_device_id = AMDeviceResolution.from_amdevice_id(db.session, ID)
-    #wallet = AMWallet.from_address(db.session, wallet_address)
     if not new_device_id:
         ### TODO
-        #print (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+DeviceManufacturer+', '+DeviceBrand+', '+DeviceID+', '+AppVersion+', '+Resolution)
-        #return (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+DeviceManufacturer+', '+DeviceBrand+', '+DeviceID+', '+AppVersion+', '+Resolution)
         amdeviceid_resolution = AMDeviceResolution(ID, Resolution)
         db.session.add(amdeviceid_resolution)
         db.session.commit()
-        return "added"
-    #else:
-    #    dupe = True
-    #device = AMDevice(wallet, app_version, os, os_version, manufacturer, brand, device_id)
-    #db.session.add(wallet)
-    #db.session.add(device)
-    #db.session.commit()
-    # log error
-    #if (dupe):
-    #    logger.error(f"found duplicate amdevice_id: {amdevice_id}")
-    #    #utils.email_wallet_address_duplicate(logger, wallet_address)
+        return "Added to amdeviceresolution table. Removed from amdevice table."
     return "ok"
-    #return (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+Resolution)
 
 @app.route("/resolution", methods=["POST"])
 def resolution():

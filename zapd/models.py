@@ -204,6 +204,10 @@ class AMDevice(db.Model):
     def __repr__(self):
         return "<AMDevice %r %r>" % (self.brand, self.device_id)
 
+    @classmethod
+    def locate_amdevice(cls, session, id):
+        return session.query(cls).filter(cls.id == id).first()
+
 # App Metrics Wallet
 class AMWallet(db.Model):
     __tablename__ = 'amwallet'
