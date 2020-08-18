@@ -205,7 +205,7 @@ class AMDevice(db.Model):
         return "<AMDevice %r %r>" % (self.brand, self.device_id)
 
     @classmethod
-    def locate_amdevice(cls, session, id):
+    def search_by_id(cls, session, id):
         return session.query(cls).filter(cls.id == id).first()
 
 # App Metrics Wallet

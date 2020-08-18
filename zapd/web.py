@@ -10,7 +10,7 @@ import decimal
 
 import gevent
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, request, flash, abort
+from flask import Flask, render_template, request, flash, abort, redirect, url_for
 from flask_jsonrpc import JSONRPC
 from flask_jsonrpc.exceptions import OtherError
 import requests
@@ -220,31 +220,21 @@ def testing():
     DeviceID = request.form['DeviceID']
     AppVersion = request.form['AppVersion']
     Resolution = request.form['resolution']
-    ##print (CreatedDate+', '+ID+', '+DeviceOS+', '+OSVersion+', '+DeviceManufacturer+', '+DeviceBrand+', '+DeviceID+', '+AppVersion+', '+Resolution)
-    #locating_amdevice = AMDevice.locate_amdevice(db.session, ID)
-    #db.session.delete(locating_amdevice) ### Could delete the record and that would prevent it from showing
-    new_device_id = AMDeviceResolution.from_amdevice_id(db.session, ID)
-    if not new_device_id:
-        ### TODO
+    ### Delete the record first
+    search_id = AMDevice.search_by_id(db.session, ID)
+    db.session.delete(search_id)
+    ### Search for device_id not exists
+    exists_device_id = AMDeviceResolution.from_amdevice_id(db.session, ID)
+    if not exists_device_id:
+        ### Add device_id to AMDeviceResolution table
         amdeviceid_resolution = AMDeviceResolution(ID, Resolution)
         db.session.add(amdeviceid_resolution)
         db.session.commit()
+        ### Delete device from AMDevice table
         #return "Added to amdeviceresolution table. Removed from amdevice table."
-        #return render_template("templates/multiple_devices.html")
-        return render_template("multiple_devices.html")
+        #return redirect(url_for('App Metrics - Wallet''App Metrics - Wallet')) 
+        return redirect(url_for('amwallet.execute')) 
     return "ok"
-
-@app.route("/resolution", methods=["POST"])
-def resolution():
-    ID = request.form['ID']
-    CreatedDate = request.form['CreatedDate']
-    DeviceOS = request.form['DeviceOS']
-    OSVersion = request.form['OSVersion']
-    DeviceManufacturer = request.form['DeviceManufacturer']
-    DeviceBrand = request.form['DeviceBrand']
-    DeviceID = request.form['DeviceID']
-    AppVersion = request.form['AppVersion']
-    return render_template
 
 @app.route("/internal/process_proposals")
 def process_proposals():
