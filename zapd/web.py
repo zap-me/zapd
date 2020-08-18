@@ -229,7 +229,9 @@ def testing():
         amdeviceid_resolution = AMDeviceResolution(ID, Resolution)
         db.session.add(amdeviceid_resolution)
         db.session.commit()
-        return "Added to amdeviceresolution table. Removed from amdevice table."
+        #return "Added to amdeviceresolution table. Removed from amdevice table."
+        #return render_template("templates/multiple_devices.html")
+        return render_template("multiple_devices.html")
     return "ok"
 
 @app.route("/resolution", methods=["POST"])
