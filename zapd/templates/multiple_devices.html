@@ -16,6 +16,7 @@
                 <th> Brand</th>
                 <th> Device ID</th>
                 <th> Zap App Version</th>
+                <th> Resolution</th>
             </tr>
             {% for device in wallet.devices %}
             <tr>
@@ -27,15 +28,17 @@
                 <td>{{device.brand}}</td>
                 <td>{{device.device_id}}</td>
                 <td>{{device.app_version}}</td>
-                {% if not device.device_resolution %}
                 <td>
+                {% if device.device_resolution %}
+                    {{device.device_resolution.resolution}}
+                {% else %}
                   <form action="resolve_device" method="POST">
                     <input type="hidden" name="device_id" value='{{device.id}}'>
                     <input type="text" placeholder="resolution" id="resolution" name="resolution" required>
                     <button type="submit" onclick="return checkSubmit()">Submit</button>
                   </form>
-                </td>
                 {% endif %}
+                </td>
 	    </tr>
             {% endfor %}
 	</table>
