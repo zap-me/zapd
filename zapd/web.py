@@ -10,7 +10,7 @@ import decimal
 
 import gevent
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, request, flash, abort, redirect, url_for
+from flask import Flask, render_template, request, flash, abort
 from flask_jsonrpc import JSONRPC
 from flask_jsonrpc.exceptions import OtherError
 import requests
@@ -22,7 +22,7 @@ import pyblake2
 
 import config
 from app_core import app, db
-from models import Transaction, Block, CreatedTransaction, DashboardHistory, Proposal, Payment, AMWallet, AMDevice, AMDeviceResolution
+from models import Transaction, Block, CreatedTransaction, DashboardHistory, Proposal, Payment, AMWallet, AMDevice
 import admin
 import utils
 
@@ -208,33 +208,6 @@ def int2zap(num):
 @app.route("/")
 def index():
     return render_template("index.html")
-
-@app.route("/testing", methods=["POST"])
-def testing():
-    ID = request.form['ID']
-    CreatedDate = request.form['CreatedDate']
-    DeviceOS = request.form['DeviceOS']
-    OSVersion = request.form['OSVersion']
-    DeviceManufacturer = request.form['DeviceManufacturer']
-    DeviceBrand = request.form['DeviceBrand']
-    DeviceID = request.form['DeviceID']
-    AppVersion = request.form['AppVersion']
-    Resolution = request.form['resolution']
-    ### Delete the record first
-    search_id = AMDevice.search_by_id(db.session, ID)
-    db.session.delete(search_id)
-    ### Search for device_id not exists
-    exists_device_id = AMDeviceResolution.from_amdevice_id(db.session, ID)
-    if not exists_device_id:
-        ### Add device_id to AMDeviceResolution table
-        amdeviceid_resolution = AMDeviceResolution(ID, Resolution)
-        db.session.add(amdeviceid_resolution)
-        db.session.commit()
-        ### Delete device from AMDevice table
-        #return "Added to amdeviceresolution table. Removed from amdevice table."
-        #return redirect(url_for('App Metrics - Wallet''App Metrics - Wallet')) 
-        return redirect(url_for('amwallet.execute')) 
-    return "ok"
 
 @app.route("/internal/process_proposals")
 def process_proposals():
@@ -463,8 +436,7 @@ def validateaddress(address):
 
 class ZapWeb():
 
-    def __init__(self, addr="0.0.0.0", port=5000, no_waves=False):
-    #def __init__(self, addr="127.0.0.1", port=5000, no_waves=False):
+    def __init__(self, addr="127.0.0.1", port=5000, no_waves=False):
         self.addr = addr
         self.port = port
         self.runloop_greenlet = None
