@@ -52,7 +52,7 @@ ERR_EMPTY_ADDRESS = 4
 def get(url):
     with requests.Session() as s:
         retries = Retry(
-            total=10,
+            total=450,
             backoff_factor=0.2,
             status_forcelist=[500, 502, 503, 504])
         s.mount('http://', HTTPAdapter(max_retries=retries))
