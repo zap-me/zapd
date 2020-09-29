@@ -573,7 +573,7 @@ class ProposalModelView(BaseModelView):
     column_export_list = ('id', 'date', 'proposer', 'categories', 'authorizer', 'reason', 'date_authorized', 'date_expiry', 'status', 'total', 'claimed')
     column_formatters_export = {'total': _format_total_column, 'claimed': _format_totalclaimed_column_export}
     form_columns = ['reason', 'categories', 'recipient', 'message', 'amount', 'csvfile']
-    form_extra_fields = {'recipient': TextField('Recipient'), 'message': TextField('Message'), 'amount': DecimalField('Amount', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
+    form_extra_fields = {'recipient': TextField('Recipient'), 'message': TextField('Message', validators=[validators.Length(max=120, message="Message field cannot be longer than 120 characters(including spaces).")]), 'amount': DecimalField('Amount', validators=[validators.Optional()]), 'csvfile': FileField('CSV File')}
 
     def _validate_form(self, form):
         csv_rows = None
