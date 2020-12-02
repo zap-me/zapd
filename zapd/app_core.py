@@ -22,5 +22,13 @@ if os.getenv("SENDGRID_API_KEY"):
     app.config["MAIL_SENDGRID_API_KEY"] = os.getenv("SENDGRID_API_KEY")
 if os.getenv("SERVER_NAME"):
     app.config["SERVER_NAME"] = os.getenv("SERVER_NAME")
+app.config["ASSET_ID"] = "CgUrFtinLXEbJwJVjwwcppk4Vpz1nMmR3H5cQaDcUcfe"
+if os.getenv("PRODUCTION"):
+    app.config["TESTNET"] = False
+    app.config["ASSET_ID"] = "9R3iLi4qGLVWKc16Tg98gmRvgg1usGEYd7SgC1W5D6HB"
+if os.getenv("SERVER_NAME"):
+    app.config["SERVER_NAME"] = os.getenv("SERVER_NAME")
+if os.getenv("URL_SCHEME"):
+    app.config["URL_SCHEME"] = os.getenv("URL_SCHEME")
 db = SQLAlchemy(app)
 mail = MailSendGrid(app)

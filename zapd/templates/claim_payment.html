@@ -11,7 +11,7 @@
             <h4>Claim form:</h4>
             <form method="post">
             {%if not recipient%}
-                <input type="text" name="recipient" placeholder="Wallet address"/>
+                <input type="text" name="recipient" placeholder="Wallet address" required/>
             {%else%}
                 Wallet address: {{recipient}}<br/>
             {%endif%}
@@ -22,6 +22,12 @@
             {%if payment.status == payment.STATE_SENT_FUNDS%}
                 Sent!<br/>
             {%endif%}
+	    <br>
+	    <h4> QR Code: </h4>
+	    <div class="card-body">
+ 	        <a href="{{ url }}">{{ qrcode_svg | safe }}</a><br/>
+	        <p>SCAN or CLICK the QRCode to claim your zap.</p><br/>
+            </div>
         </div>
     </div>
 </div>

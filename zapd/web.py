@@ -7,6 +7,7 @@ import struct
 import time
 import datetime
 import decimal
+import io
 
 import gevent
 from gevent.pywsgi import WSGIServer
@@ -19,6 +20,8 @@ from requests.packages.urllib3.util.retry import Retry
 import base58
 import pywaves
 import pyblake2
+import qrcode
+import qrcode.image.svg
 
 import config
 from app_core import app, db
@@ -175,6 +178,14 @@ def _broadcast_transaction(txid):
         raise err
     return dbtx
 
+def qrcode_svg_create(data):
+    factory = qrcode.image.svg.SvgPathImage
+    img = qrcode.make(data, image_factory=factory)
+    output = io.BytesIO()
+    img.save(output)
+    svg = output.getvalue().decode('utf-8')
+    return svg
+
 #
 # Jinja2 filters
 #
@@ -260,6 +271,9 @@ def process_claim(payment, dbtx):
 
 @app.route("/claim_payment/<token>", methods=["GET", "POST"])
 def claim_payment(token):
+    qrcode = None
+    url = None
+    attachment = None
     payment = Payment.from_token(db.session, token)
     if not payment:
         abort(404)
@@ -271,7 +285,11 @@ def claim_payment(token):
     recipient = None
     if dbtx:
         recipient = json.loads(dbtx.json_data)["recipient"]
-    return render_template("claim_payment.html", payment=payment, recipient=recipient)
+    
+    url = "{}://{}/claim_payment/{}".format(app.config["URL_SCHEME"], app.config["SERVER_NAME"], payment.token)
+    qrcode_url = "{}://{}/claim_payment/{}".format("zapclaimlink", app.config["SERVER_NAME"], payment.token)
+    qrcode_svg = qrcode_svg_create(qrcode_url)
+    return render_template("claim_payment.html", payment=payment, recipient=recipient, qrcode_svg=qrcode_svg, url=qrcode_url)
 
 # App metrics wallet log
 @app.route("/am_wallet_log", methods=["POST"])
