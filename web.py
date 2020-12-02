@@ -256,6 +256,9 @@ def process_claim(payment, dbtx):
 
 @app.route("/claim_payment/<token>", methods=["GET", "POST"])
 def claim_payment(token):
+    qrcode = None
+    url = None
+    attachment = None
     payment = Payment.from_token(db.session, token)
     if not payment:
         abort(404)
@@ -267,7 +270,11 @@ def claim_payment(token):
     recipient = None
     if dbtx:
         recipient = dbtx.tx_with_sigs()["recipient"]
-    return render_template("claim_payment.html", payment=payment, recipient=recipient)
+    
+    url = "{}://{}/claim_payment/{}".format(app.config["URL_SCHEME"], app.config["SERVER_NAME"], payment.token)
+    qrcode_url = "{}://{}/claim_payment/{}".format("zapclaimlink", app.config["SERVER_NAME"], payment.token)
+    qrcode_svg = qrcode_svg_create(qrcode_url)
+    return render_template("claim_payment.html", payment=payment, recipient=recipient, qrcode_svg=qrcode_svg, url=qrcode_url)
 
 @app.route("/dashboard")
 @roles_accepted("admin")
