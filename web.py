@@ -270,11 +270,11 @@ def claim_payment(token):
     recipient = None
     if dbtx:
         recipient = dbtx.tx_with_sigs()["recipient"]
-    
-    url = "{}://{}/claim_payment/{}".format(app.config["URL_SCHEME"], app.config["SERVER_NAME"], payment.token)
-    qrcode_url = "{}://{}/claim_payment/{}".format("premiostagelink", app.config["SERVER_NAME"], payment.token)
-    qrcode_svg = qrcode_svg_create(qrcode_url)
-    return render_template("claim_payment.html", payment=payment, recipient=recipient, qrcode_svg=qrcode_svg, url=qrcode_url)
+
+    url_parts = urlparse(request.url)
+    url = url_parts._replace(scheme="premiostagelink").geturl()
+    qrcode_svg = qrcode_svg_create(url)
+    return render_template("claim_payment.html", payment=payment, recipient=recipient, qrcode_svg=qrcode_svg, url=url)
 
 @app.route("/dashboard")
 @roles_accepted("admin")
