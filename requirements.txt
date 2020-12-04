@@ -1,7 +1,6 @@
 # greenlet version 1.4.14 has ABI change which causes crash on win/osx
 # https://github.com/gevent/gevent/issues/1260
 greenlet==0.4.13
-gevent==1.3.4
 Flask-JSONRPC==0.3.1
 Flask-Admin==1.5.4
 Flask-Security==1.7.5
@@ -18,3 +17,5 @@ pywaves==0.8.14
 pysha3==1.0.2
 qrcode==6.1
 jsbeautifier==1.11.0
+gevent==20.9.0
+gevent-websocket==0.10.1
