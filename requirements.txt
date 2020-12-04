@@ -18,4 +18,4 @@ qrcode==6.1
 jsbeautifier==1.11.0
 gevent==20.9.0
 gevent-websocket==0.10.1
-greenlet 0.4.17
+greenlet==0.4.17
