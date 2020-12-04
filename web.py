@@ -258,7 +258,7 @@ def claim_payment(token):
         recipient = json.loads(dbtx.json_data)["recipient"]
     
     url = "{}://{}/claim_payment/{}".format(app.config["URL_SCHEME"], app.config["SERVER_NAME"], payment.token)
-    qrcode_url = "{}://{}/claim_payment/{}".format("zapclaimlink", app.config["SERVER_NAME"], payment.token)
+    qrcode_url = "{}://{}/claim_payment/{}".format("premiostagelink", app.config["SERVER_NAME"], payment.token)
     qrcode_svg = qrcode_svg_create(qrcode_url)
     return render_template("claim_payment.html", payment=payment, recipient=recipient, qrcode_svg=qrcode_svg, url=qrcode_url)
 
