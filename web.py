@@ -71,7 +71,7 @@ def dashboard_data():
     # get balance of local wallet
     path = f"assets/balance/{ADDRESS}/{ASSET_ID}"
     response = requests.get(NODE_BASE_URL + path)
-    zap_balance = response.json()["balance"]
+    asset_balance = response.json()["balance"]
     # get the balance of the main wallet
     path = f"transactions/info/{ASSET_ID}"
     response = requests.get(NODE_BASE_URL + path)
@@ -84,7 +84,7 @@ def dashboard_data():
         issuer = "n/a"
         master_waves_balance = "n/a"
     # return data
-    return {"zap_balance": zap_balance, "zap_address": ADDRESS, \
+    return {"asset_balance": asset_balance, "asset_address": ADDRESS, \
             "master_waves_balance": master_waves_balance, "master_waves_address": issuer, \
             "asset_id": ASSET_ID, \
             "testnet": app.config["TESTNET"]}
@@ -163,7 +163,7 @@ def qrcode_svg_create(data):
 #
 
 @app.template_filter()
-def int2zap(num):
+def int2asset(num):
     num = decimal.Decimal(num)
     return num/100
 
@@ -195,13 +195,13 @@ def process_proposals():
         for payment in proposal.payments:
             if payment.status == payment.STATE_CREATED:
                 if payment.email:
-                    utils.email_payment_claim(logger, payment, proposal.HOURS_EXPIRY)
+                    utils.email_payment_claim(logger, app.config["ASSET_NAME"], payment, proposal.HOURS_EXPIRY)
                     payment.status = payment.STATE_SENT_CLAIM_LINK
                     db.session.add(payment)
                     logger.info(f"Sent payment claim url to {payment.email}")
                     emails += 1
                 elif payment.mobile:
-                    utils.sms_payment_claim(logger, payment, proposal.HOURS_EXPIRY)
+                    utils.sms_payment_claim(logger, app.config["ASSET_NAME"], payment, proposal.HOURS_EXPIRY)
                     payment.status = payment.STATE_SENT_CLAIM_LINK
                     db.session.add(payment)
                     logger.info(f"Sent payment claim url to {payment.mobile}")
@@ -266,7 +266,7 @@ def claim_payment(token):
 @app.route("/dashboard")
 def dashboard():
     data = dashboard_data()
-    data["zap_balance"] = from_int_to_user_friendly(data["zap_balance"], 100)
+    data["asset_balance"] = from_int_to_user_friendly(data["asset_balance"], 100)
     data["master_waves_balance"] = from_int_to_user_friendly(data["master_waves_balance"], 10**8)
     return render_template("dashboard.html", data=data)
 
@@ -340,39 +340,43 @@ def validateaddress(address):
 # gevent class
 #
 
-class ZapWeb():
+class WebGreenlet():
 
-    def __init__(self, addr="0.0.0.0", port=5000):
+    def __init__(self, exception_func, addr="0.0.0.0", port=5000):
         self.addr = addr
         self.port = port
         self.runloop_greenlet = None
+        self.exception_func = exception_func
 
     def check_wallet(self):
         # check address object matches our configured address
         global pw_address
         pw_address = pywaves.Address(seed=SEED)
-        if pw_address.address != ADDRESS:
-            msg = f"pw_address ({pw_address.address}) does not match {ADDRESS}"
+        addr = pw_address.address
+        if isinstance(addr, bytes):
+            addr = addr.decode()
+        if addr != ADDRESS:
+            msg = f"pw_address ({addr}) does not match {ADDRESS}"
             logger.error(msg)
             sys.exit(1)
 
-    def start(self, group=None):
+    def start(self):
         def runloop():
-            logger.info("ZapWeb runloop started")
-            logger.info(f"ZapWeb webserver starting (addr: {self.addr}, port: {self.port})")
+            logger.info("WebGreenlet runloop started")
+            logger.info(f"WebGreenlet webserver starting (addr: {self.addr}, port: {self.port})")
             http_server = WSGIServer((self.addr, self.port), app)
             http_server.serve_forever()
 
         def start_greenlets():
             logger.info("checking wallet...")
             self.check_wallet()
-            logger.info("starting ZapWeb runloop...")
+            logger.info("starting WebGreenlet runloop...")
             self.runloop_greenlet.start()
 
-        # create greenlets
+        # create greenlet
         self.runloop_greenlet = gevent.Greenlet(runloop)
-        if group != None:
-            group.add(self.runloop_greenlet)
+        if self.exception_func:
+            self.runloop_greenlet.link_exception(self.exception_func)
         # check node/wallet and start greenlets
         gevent.spawn(start_greenlets)
 
@@ -389,10 +393,10 @@ if __name__ == "__main__":
     # clear loggers set by any imported modules
     logging.getLogger().handlers.clear()
 
-    zapweb = ZapWeb()
-    zapweb.start()
+    web_greenlet = WebGreenlet()
+    web_greenlet.start()
 
     while 1:
         gevent.sleep(1)
 
-    zapweb.stop()
+    web_greenlet.stop()
