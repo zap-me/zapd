@@ -24,7 +24,6 @@ import pywaves
 import pyblake2
 import qrcode
 import qrcode.image.svg
-from gevent_tasks import TaskManager, cron
 
 from app_core import app, db
 from models import CreatedTransaction, Proposal, Payment
