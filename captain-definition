@@ -8,7 +8,6 @@
                 "RUN apk add --no-cache make gcc libc-dev libxslt-dev postgresql-dev libffi-dev",
                 "RUN pip3 install --upgrade pip",
                 "RUN pip3 install -r requirements.txt",
-                "RUN python3 ./init_wallet_address.py",
                 "CMD [ \"python3\", \"app.py\" ]",
                 "EXPOSE 5000"
         ]
