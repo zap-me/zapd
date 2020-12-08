@@ -370,25 +370,25 @@ class WebGreenlet():
             http_server = WSGIServer((self.addr, self.port), app)
             http_server.serve_forever()
 
+        def process_proposals_loop():
+            while True:
+                gevent.spawn(process_proposals)
+                gevent.sleep(30)
+
         def start_greenlets():
             logger.info("checking wallet...")
             self.check_wallet()
             logger.info("starting WebGreenlet runloop...")
             self.runloop_greenlet.start()
-
-        def send_payment_greenlet():
-            while True:
-                gevent.spawn(process_proposals)
-                gevent.sleep(30)
-            self.runloop_greenlet.start()
+            self.process_proposals_greenlet = gevent.Greenlet(process_proposals_loop)
+            self.process_proposals_greenlet.start()
 
         # create greenlet
         self.runloop_greenlet = gevent.Greenlet(runloop)
         if self.exception_func:
             self.runloop_greenlet.link_exception(self.exception_func)
-        ## check node/wallet and start greenlets
+        # check node/wallet and start greenlets
         gevent.spawn(start_greenlets)
-        gevent.spawn(send_payment_greenlet)
 
     def stop(self):
         self.runloop_greenlet.kill()
