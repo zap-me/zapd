@@ -9,6 +9,7 @@ import datetime
 import decimal
 import io
 from urllib.parse import urlparse
+import urllib3
 
 import gevent
 from gevent.pywsgi import WSGIServer
@@ -23,6 +24,7 @@ import pywaves
 import pyblake2
 import qrcode
 import qrcode.image.svg
+from gevent_tasks import TaskManager, cron
 
 from app_core import app, db
 from models import CreatedTransaction, Proposal, Payment
@@ -177,41 +179,42 @@ def index():
 
 @app.route("/internal/process_proposals")
 def process_proposals():
-    # set expired
-    expired = 0
-    now = datetime.datetime.now()
-    proposals = Proposal.in_status(db.session, Proposal.STATE_AUTHORIZED)
-    for proposal in proposals:
-        if proposal.date_expiry < now:
-            proposal.status = Proposal.STATE_EXPIRED
-            expired += 1
-            db.session.add(proposal)
-    db.session.commit()
-    # process authorized 
-    emails = 0
-    sms_messages = 0
-    proposals = Proposal.in_status(db.session, Proposal.STATE_AUTHORIZED)
-    for proposal in proposals:
-        for payment in proposal.payments:
-            if payment.status == payment.STATE_CREATED:
-                if payment.email:
-                    utils.email_payment_claim(logger, app.config["ASSET_NAME"], payment, proposal.HOURS_EXPIRY)
-                    payment.status = payment.STATE_SENT_CLAIM_LINK
-                    db.session.add(payment)
-                    logger.info(f"Sent payment claim url to {payment.email}")
-                    emails += 1
-                elif payment.mobile:
-                    utils.sms_payment_claim(logger, app.config["ASSET_NAME"], payment, proposal.HOURS_EXPIRY)
-                    payment.status = payment.STATE_SENT_CLAIM_LINK
-                    db.session.add(payment)
-                    logger.info(f"Sent payment claim url to {payment.mobile}")
-                    sms_messages += 1
-                elif payment.wallet_address:
-                    ##TODO: set status and commit before sending so we cannot send twice
-                    raise Exception("not yet implemented")
-    db.session.commit()
-    logger.info(f"payment statuses commited")
-    return f"done (expired {expired}, emails {emails}, SMS messages {sms_messages})"
+    with app.app_context():
+        # set expired
+        expired = 0
+        now = datetime.datetime.now()
+        proposals = Proposal.in_status(db.session, Proposal.STATE_AUTHORIZED)
+        for proposal in proposals:
+            if proposal.date_expiry < now:
+                proposal.status = Proposal.STATE_EXPIRED
+                expired += 1
+                db.session.add(proposal)
+        db.session.commit()
+        # process authorized 
+        emails = 0
+        sms_messages = 0
+        proposals = Proposal.in_status(db.session, Proposal.STATE_AUTHORIZED)
+        for proposal in proposals:
+            for payment in proposal.payments:
+                if payment.status == payment.STATE_CREATED:
+                    if payment.email:
+                        utils.email_payment_claim(logger, app.config["ASSET_NAME"], payment, proposal.HOURS_EXPIRY)
+                        payment.status = payment.STATE_SENT_CLAIM_LINK
+                        db.session.add(payment)
+                        logger.info(f"Sent payment claim url to {payment.email}")
+                        emails += 1
+                    elif payment.mobile:
+                        utils.sms_payment_claim(logger, app.config["ASSET_NAME"], payment, proposal.HOURS_EXPIRY)
+                        payment.status = payment.STATE_SENT_CLAIM_LINK
+                        db.session.add(payment)
+                        logger.info(f"Sent payment claim url to {payment.mobile}")
+                        sms_messages += 1
+                    elif payment.wallet_address:
+                        ##TODO: set status and commit before sending so we cannot send twice
+                        raise Exception("not yet implemented")
+        db.session.commit()
+        logger.info(f"payment statuses commited")
+        return f"done (expired {expired}, emails {emails}, SMS messages {sms_messages})"
 
 def process_claim(payment, dbtx):
     if payment.proposal.status != payment.proposal.STATE_AUTHORIZED:
@@ -336,6 +339,7 @@ def validateaddress(address):
     err = OtherError("invalid address", 0)
     raise err
 
+
 #
 # gevent class
 #
@@ -373,12 +377,19 @@ class WebGreenlet():
             logger.info("starting WebGreenlet runloop...")
             self.runloop_greenlet.start()
 
+        def send_payment_greenlet():
+            while True:
+                gevent.spawn(process_proposals)
+                gevent.sleep(30)
+            self.runloop_greenlet.start()
+
         # create greenlet
         self.runloop_greenlet = gevent.Greenlet(runloop)
         if self.exception_func:
             self.runloop_greenlet.link_exception(self.exception_func)
-        # check node/wallet and start greenlets
+        ## check node/wallet and start greenlets
         gevent.spawn(start_greenlets)
+        gevent.spawn(send_payment_greenlet)
 
     def stop(self):
         self.runloop_greenlet.kill()
