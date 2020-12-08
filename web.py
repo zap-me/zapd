@@ -9,7 +9,6 @@ import datetime
 import decimal
 import io
 from urllib.parse import urlparse
-import urllib3
 
 import gevent
 from gevent.pywsgi import WSGIServer
@@ -176,7 +175,6 @@ def int2asset(num):
 def index():
     return render_template("index.html")
 
-@app.route("/internal/process_proposals")
 def process_proposals():
     with app.app_context():
         # set expired
@@ -373,7 +371,7 @@ class WebGreenlet():
         def process_proposals_loop():
             while True:
                 gevent.spawn(process_proposals)
-                gevent.sleep(30)
+                gevent.sleep(2)
 
         def start_greenlets():
             logger.info("checking wallet...")
