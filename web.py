@@ -158,23 +158,6 @@ def qrcode_svg_create(data):
     svg = output.getvalue().decode('utf-8')
     return svg
 
-#
-# Jinja2 filters
-#
-
-@app.template_filter()
-def int2asset(num):
-    num = decimal.Decimal(num)
-    return num/100
-
-#
-# Flask views
-#
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
 def process_proposals():
     with app.app_context():
         # set expired
@@ -187,7 +170,7 @@ def process_proposals():
                 expired += 1
                 db.session.add(proposal)
         db.session.commit()
-        # process authorized 
+        # process authorized
         emails = 0
         sms_messages = 0
         proposals = Proposal.in_status(db.session, Proposal.STATE_AUTHORIZED)
@@ -212,6 +195,24 @@ def process_proposals():
         db.session.commit()
         logger.info(f"payment statuses commited")
         return f"done (expired {expired}, emails {emails}, SMS messages {sms_messages})"
+
+
+#
+# Jinja2 filters
+#
+
+@app.template_filter()
+def int2asset(num):
+    num = decimal.Decimal(num)
+    return num/100
+
+#
+# Flask views
+#
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 def process_claim(payment, dbtx):
     if payment.proposal.status != payment.proposal.STATE_AUTHORIZED:
