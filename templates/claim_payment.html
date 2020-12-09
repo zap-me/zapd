@@ -13,8 +13,7 @@
             {%if not recipient%}
                 <div class="card-body">
                     <a href="{{ url }}">{{ qrcode_svg | safe }}</a><br/>
-                    <p>SCAN or CLICK the QRCode to claim your zap.</p><br/>
-                    </div>
+		    <p>SCAN or CLICK the QR code to claim your {{config["ASSET_NAME"]}}.</p><br/>
                 </div>
             {%else%}
                 Wallet address: {{recipient}}<br/>
