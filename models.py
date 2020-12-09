@@ -3,6 +3,7 @@ import datetime
 import decimal
 import csv
 import logging
+import json
 
 from flask import redirect, url_for, request, flash, has_app_context, g
 from flask_security import Security, SQLAlchemyUserDatastore, \
@@ -608,27 +609,32 @@ class UserModelView(BaseModelView):
 
 ### define token distribution models
 
-class CreatedTransactionSchema(Schema):
+class TokenTxSchema(Schema):
     date = fields.Date()
     txid = fields.String()
+    type = fields.String()
     state = fields.String()
     amount = fields.Integer()
+    json_data_signed = fields.Boolean()
     json_data = fields.String()
 
-class CreatedTransaction(db.Model):
-    __tablename__ = 'created_transactions'
+class TokenTx(db.Model):
+    __tablename__ = 'token_txs'
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Integer, nullable=False)
     txid = db.Column(db.String, nullable=False, unique=True)
+    type = db.Column(db.String, nullable=False)
     state = db.Column(db.String, nullable=False)
     amount = db.Column(db.Integer, nullable=False)
     json_data = db.Column(db.String, nullable=False)
 
-    def __init__(self, txid, state, amount, json_data):
+    def __init__(self, txid, type, state, amount, json_data_signed, json_data):
         self.date = time.time()
+        self.type = type
         self.state = state
         self.txid = txid
         self.amount = amount
+        self.json_data_signed = json_data_signed
         self.json_data = json_data
 
     @classmethod
@@ -650,11 +656,35 @@ class CreatedTransaction(db.Model):
         return session.query(cls).count()
 
     def __repr__(self):
-        return '<CreatedTransaction %r>' % (self.txid)
+        return '<TokenTx %r>' % (self.txid)
 
     def to_json(self):
-        tx_schema = CreatedTransactionSchema()
+        tx_schema = TokenTxSchema()
         return tx_schema.dump(self).data
+
+    def tx_with_sigs(self):
+        tx = json.loads(self.json_data)
+        if self.json_data_signed:
+            return tx
+        proofs = tx["proofs"]
+        for sig in self.signatures:
+            while sig.signer_index >= len(proofs):
+                proofs.append('todo')
+            proofs[signer_index] = sig.value
+        return tx
+
+class TxSig(db.Model):
+    __tablename__ = 'tx_sigs'
+    id = db.Column(db.Integer, primary_key=True)
+    token_tx_id = db.Column(db.Integer, db.ForeignKey('token_txs.id'), nullable=False)
+    token_tx = db.relationship('TokenTx', backref=db.backref('signatures', lazy='dynamic'))
+    signer_index = db.Column(db.Integer, nullable=False)
+    value = db.Column(db.String, unique=False)
+
+    def __init__(self, token_tx, signer_index, value):
+        self.token_tx = token_tx
+        self.signer_index = signer_index
+        self.value = value
 
 class Setting(db.Model):
     __tablename__ = 'settings'

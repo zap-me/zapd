@@ -7,13 +7,15 @@ import struct
 import time
 import datetime
 import decimal
+import base64
 import io
 from urllib.parse import urlparse
 
 import gevent
 from gevent.pywsgi import WSGIServer
-from flask import Flask, render_template, request, flash, abort
-from flask_jsonrpc import JSONRPC
+from flask import Flask, render_template, request, flash, abort, jsonify
+from flask_security import current_user, roles_accepted
+#from flask_jsonrpc import JSONRPC
 from flask_jsonrpc.exceptions import OtherError
 import requests
 from requests.adapters import HTTPAdapter
@@ -25,11 +27,12 @@ import qrcode
 import qrcode.image.svg
 
 from app_core import app, db
-from models import CreatedTransaction, Proposal, Payment
+from models import TokenTx, TxSig, Proposal, Payment
 import admin
 import utils
+import tx_utils
 
-jsonrpc = JSONRPC(app, "/api")
+#jsonrpc = JSONRPC(app, "/api")
 logger = logging.getLogger(__name__)
 
 # our address object
@@ -95,6 +98,9 @@ def from_int_to_user_friendly(val, divisor, decimal_places=4):
     val = val / divisor
     return round(val, decimal_places)
 
+def tx_to_txid(tx):
+    return utils.txid_from_txdata(tx_utils.tx_serialize(tx))
+
 def _create_transaction(recipient, amount, attachment):
     # get fee
     path = f"assets/details/{ASSET_ID}"
@@ -124,16 +130,16 @@ def _create_transaction(recipient, amount, attachment):
     # calc txid properly
     txid = transfer_asset_txid(signed_tx)
     # store tx in db
-    dbtx = CreatedTransaction(txid, CTX_CREATED, signed_tx["amount"], address_data["api-data"])
+    dbtx = TokenTx(txid, CTX_CREATED, "transfer", signed_tx["amount"], address_data["api-data"], True)
     return dbtx
 
 def _broadcast_transaction(txid):
-    dbtx = CreatedTransaction.from_txid(db.session, txid)
+    dbtx = TokenTx.from_txid(db.session, txid)
     if not dbtx:
         raise OtherError("transaction not found", ERR_NO_TXID)
     if dbtx.state == CTX_EXPIRED:
         raise OtherError("transaction expired", ERR_TX_EXPIRED)
-    signed_tx = dbtx.json_data
+    signed_tx = dbtx.tx_with_sigs()
     # broadcast
     logger.debug(f"requesting broadcast of tx:\n\t{signed_tx}")
     path = f"assets/broadcast/transfer"
@@ -196,7 +202,6 @@ def process_proposals():
         logger.info(f"payment statuses commited")
         return f"done (expired {expired}, emails {emails}, SMS messages {sms_messages})"
 
-
 #
 # Jinja2 filters
 #
@@ -205,6 +210,13 @@ def process_proposals():
 def int2asset(num):
     num = decimal.Decimal(num)
     return num/100
+
+@app.context_processor
+def inject_config_qrcode_svg():
+    url_parts = urlparse(request.url)
+    url = url_parts._replace(scheme="premiostagelink", path="/config").geturl()
+    qrcode_svg = qrcode_svg_create(url)
+    return dict(config_url=url, config_qrcode_svg=qrcode_svg)
 
 #
 # Flask views
@@ -250,92 +262,180 @@ def claim_payment(token):
     payment = Payment.from_token(db.session, token)
     if not payment:
         abort(404)
-    dbtx = CreatedTransaction.from_txid(db.session, payment.txid)
+    dbtx = TokenTx.from_txid(db.session, payment.txid)
     if request.method == "POST":
         dbtx, err_msg = process_claim(payment, dbtx)
         if err_msg:
             flash(err_msg, "danger")
     recipient = None
     if dbtx:
-        recipient = json.loads(dbtx.json_data)["recipient"]
-
+        recipient = dbtx.tx_with_sigs()["recipient"]
+    #return render_template("claim_payment.html", payment=payment, recipient=recipient)
     url_parts = urlparse(request.url)
     url = url_parts._replace(scheme="premiostagelink").geturl()
     qrcode_svg = qrcode_svg_create(url)
     return render_template("claim_payment.html", payment=payment, recipient=recipient, qrcode_svg=qrcode_svg, url=url)
 
 @app.route("/dashboard")
+@roles_accepted("admin")
 def dashboard():
     data = dashboard_data()
     data["asset_balance"] = from_int_to_user_friendly(data["asset_balance"], 100)
     data["master_waves_balance"] = from_int_to_user_friendly(data["master_waves_balance"], 10**8)
     return render_template("dashboard.html", data=data)
 
-#
-# JSON-RPC
-#
+@app.route("/config")
+def config():
+    return jsonify(dict(asset_id=app.config["ASSET_ID"], asset_name=app.config["ASSET_NAME"], testnet=app.config["TESTNET"], tx_signers=app.config["TX_SIGNERS"], tx_types=tx_utils.TYPES))
 
-@jsonrpc.method("status")
-def status():
-    return dashboard_data()
+@app.route("/tx_create", methods=["POST"])
+def tx_create():
+    content = request.json
+    type = content["type"]
+    if not type in tx_utils.TYPES:
+        return abort(400, "'type' not valid")
+    pubkey = app.config["ASSET_MASTER_PUBKEY"]
+    address = tx_utils.generate_address(pubkey, tx_utils.CHAIN_ID)
+    asset_id = app.config["ASSET_ID"]
+    timestamp = content["timestamp"]
+    amount = 0
+    if type == "transfer":
+        fee = tx_utils.get_fee(app.config["NODE_BASE_URL"], tx_utils.DEFAULT_TX_FEE, address, None)
+        recipient = content["recipient"]
+        amount = content["amount"]
+        tx = tx_utils.transfer_asset_payload(address, pubkey, None, recipient, asset_id, amount, fee=fee, timestamp=timestamp)
+    elif type == "issue":
+        fee = tx_utils.get_fee(app.config["NODE_BASE_URL"], tx_utils.DEFAULT_ASSET_FEE, address, None)
+        asset_name = content["asset_name"]
+        asset_description = content["asset_description"]
+        amount = content["amount"]
+        tx = tx_utils.issue_asset_payload(address, pubkey, None, asset_name, asset_description, amount, decimals=2, reissuable=True, fee=fee, timestamp=timestamp)
+    elif type == "reissue":
+        fee = tx_utils.get_fee(app.config["NODE_BASE_URL"], tx_utils.DEFAULT_ASSET_FEE, address, None)
+        amount = content["amount"]
+        tx = tx_utils.reissue_asset_payload(address, pubkey, None, asset_id, amount, reissuable=True, fee=fee, timestamp=timestamp)
+    elif type == "sponsor":
+        fee = tx_utils.get_fee(app.config["NODE_BASE_URL"], tx_utils.DEFAULT_SPONSOR_FEE, address, None)
+        asset_fee = content["asset_fee"]
+        amount = asset_fee
+        tx = tx_utils.sponsor_payload(address, pubkey, None, asset_id, asset_fee, fee=fee, timestamp=timestamp)
+    elif type == "setscript":
+        fee = tx_utils.get_fee(app.config["NODE_BASE_URL"], tx_utils.DEFAULT_SCRIPT_FEE, address, None)
+        script = content["script"]
+        tx = tx_utils.set_script_payload(address, pubkey, None, script, fee=fee, timestamp=timestamp)
+    else:
+        return abort(400, "invalid type")
 
-@jsonrpc.method("getaddress")
-def getaddress():
-    return {"address": ADDRESS}
-
-@jsonrpc.method("getbalance")
-def getbalance():
-    path = f"assets/balance/{ADDRESS}/{ASSET_ID}"
-    response = requests.get(NODE_BASE_URL + path)
-    return response.json()
-
-@jsonrpc.method("gettransaction")
-def gettransaction(txid):
-    path = f"transactions/info/{txid}"
-    response = requests.get(NODE_BASE_URL + path)
-    return response.json()
-
-def transfer_asset_txid(tx):
-    serialized_data = b'\4' + \
-        base58.b58decode(tx["senderPublicKey"]) + \
-        (b'\1' + base58.b58decode(tx["assetId"]) if tx["assetId"] else b'\0') + \
-        (b'\1' + base58.b58decode(tx["feeAssetId"]) if tx["feeAssetId"] else b'\0') + \
-        struct.pack(">Q", tx["timestamp"]) + \
-        struct.pack(">Q", tx["amount"]) + \
-        struct.pack(">Q", tx["fee"]) + \
-        base58.b58decode(tx["recipient"]) + \
-        struct.pack(">H", len(tx["attachment"])) + \
-        pywaves.crypto.str2bytes(tx["attachment"])
-    return utils.txid_from_txdata(serialized_data)
-
-@jsonrpc.method("createtransaction")
-def createtransaction(recipient, amount, attachment):
-    dbtx = _create_transaction(recipient, amount, attachment)
+    txid = transfer_asset_txid(tx)
+    dbtx = TokenTx(txid, CTX_CREATED, type, amount, json.dumps(tx), False)
     db.session.add(dbtx)
     db.session.commit()
-    # return txid/state to caller
-    return {"txid": dbtx.txid, "state": dbtx.state}
+    return jsonify(dict(txid=txid, state=CTX_CREATED, tx=tx))
 
-@jsonrpc.method("broadcasttransaction")
-def broadcasttransaction(txid):
-    dbtx = _broadcast_transaction(txid)
-    db.session.add(dbtx)
+@app.route("/tx_status", methods=["POST"])
+def tx_status():
+    content = request.json
+    txid = content["txid"]
+    dbtx = TokenTx.from_txid(db.session, txid)
+    if not dbtx:
+        return abort(404)
+    tx = dbtx.tx_with_sigs()
+    return jsonify(dict(txid=txid, state=dbtx.state, tx=tx))
+
+@app.route("/tx_serialize", methods=["POST"])
+def tx_serialize():
+    content = request.json
+    tx = json.loads(content["tx"])
+    tx_serialized = tx_utils.tx_serialize(app.config["TESTNET"], tx)
+    res = {"bytes": base64.b64encode(tx_serialized).decode("utf-8", "ignore")}
+    return jsonify(res)
+
+@app.route("/tx_signature", methods=["POST"])
+def tx_signature():
+    content = request.json
+    txid = content["txid"]
+    signer_index = content["signer_index"]
+    signature = content["signature"]
+    dbtx = TokenTx.from_txid(db.session, txid)
+    if not dbtx:
+        return abort(404)
+    sig = TxSig(dbtx, signer_index, signature)
+    db.session.add(sig)
     db.session.commit()
-    # return txid/state to caller
-    return {"txid": txid, "state": dbtx.state}
+    tx = dbtx.tx_with_sigs()
+    return jsonify(dict(txid=txid, state=dbtx.state, tx=tx))
 
-@jsonrpc.method("expiretransactions")
-def expiretransactions(above_age=60*60*24):
-    count = CreatedTransaction.expire_transactions(db.session, above_age, CTX_CREATED, CTX_EXPIRED)
-    db.session.commit()
-    return {"count": count}
+@app.route("/tx_broadcast", methods=["POST"])
+def tx_broadcast():
+    #RETURN - json, broadcast status, last broadcast error
+    content = request.json
+    txid = content["txid"]
+    dbtx = TokenTx.from_txid(db.session, txid)
+    if not dbtx:
+        return abort(404)
+    tx = dbtx.tx_with_sigs()
+    error = ""
+    # broadcast transaction
+    try:
+        dbtx = _broadcast_transaction(dbtx.txid)
+        db.session.add(dbtx)
+        db.session.commit()
+    except OtherError as ex:
+        error = ex.message
+    return jsonify(dict(txid=txid, state=dbtx.state, tx=tx, error=error))
 
-@jsonrpc.method("validateaddress")
-def validateaddress(address):
-    if pywaves.validateAddress(address):
-        return {"address": address}
-    err = OtherError("invalid address", 0)
-    raise err
+##
+## JSON-RPC
+##
+#
+#@jsonrpc.method("status")
+#def status():
+#    return dashboard_data()
+#
+#@jsonrpc.method("getaddress")
+#def getaddress():
+#    return {"address": ADDRESS}
+#
+#@jsonrpc.method("getbalance")
+#def getbalance():
+#    path = f"assets/balance/{ADDRESS}/{ASSET_ID}"
+#    response = requests.get(NODE_BASE_URL + path)
+#    return response.json()
+#
+#@jsonrpc.method("gettransaction")
+#def gettransaction(txid):
+#    path = f"transactions/info/{txid}"
+#    response = requests.get(NODE_BASE_URL + path)
+#    return response.json()
+#
+#@jsonrpc.method("createtransaction")
+#def createtransaction(recipient, amount, attachment):
+#    dbtx = _create_transaction(recipient, amount, attachment)
+#    db.session.add(dbtx)
+#    db.session.commit()
+#    # return txid/state to caller
+#    return {"txid": dbtx.txid, "state": dbtx.state}
+#
+#@jsonrpc.method("broadcasttransaction")
+#def broadcasttransaction(txid):
+#    dbtx = _broadcast_transaction(txid)
+#    db.session.add(dbtx)
+#    db.session.commit()
+#    # return txid/state to caller
+#    return {"txid": txid, "state": dbtx.state}
+#
+#@jsonrpc.method("expiretransactions")
+#def expiretransactions(above_age=60*60*24):
+#    count = TokenTx.expire_transactions(db.session, above_age, CTX_CREATED, CTX_EXPIRED)
+#    db.session.commit()
+#    return {"count": count}
+#
+#@jsonrpc.method("validateaddress")
+#def validateaddress(address):
+#    if pywaves.validateAddress(address):
+#        return {"address": address}
+#    err = OtherError("invalid address", 0)
+#    raise err
 
 
 #
