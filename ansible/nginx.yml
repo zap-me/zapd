@@ -70,4 +70,4 @@
       cron:
         name: letsencrypt_renewal
         special_time: daily
-        job: letsencrypt renew --post-hook "service nginx reload"
+        job: letsencrypt renew --post-hook "/usr/sbin/service nginx reload"
