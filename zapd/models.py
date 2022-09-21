@@ -717,8 +717,8 @@ class UserModelView(BaseModelView):
     can_create = False
     can_delete = False
     can_edit = False
-    column_list = ['email', 'roles']
-    column_editable_list = ['roles']
+    column_list = ['email', 'roles', 'active']
+    column_editable_list = ['roles', 'active']
 
     def is_accessible(self):
         return (current_user.is_active and
