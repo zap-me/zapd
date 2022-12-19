@@ -29,6 +29,7 @@ import utils
 cfg = config.read_cfg()
 jsonrpc = JSONRPC(app, "/api")
 logger = logging.getLogger(__name__)
+seen_transfer_txs = {}
 
 # our address object
 pw_address = None
@@ -59,6 +60,10 @@ def get(url):
         s.mount('https://', HTTPAdapter(max_retries=retries))
         response = s.get(url)
         return response
+
+def txs_unconfirmed():
+    response = get(cfg.node_http_base_url + "transactions/unconfirmed")
+    return response.json()
 
 def block_height():
     response = get(cfg.node_http_base_url + "blocks/height")
@@ -389,12 +394,13 @@ def validateaddress(address):
 
 class ZapWeb():
 
-    def __init__(self, addr="127.0.0.1", port=5000, no_waves=False):
+    def __init__(self, addr="127.0.0.1", port=5000, no_waves=False, on_transfer_utx=None):
         self.addr = addr
         self.port = port
         self.runloop_greenlet = None
         self.blockloop_greenlet = None
         self.no_waves = no_waves
+        self.on_transfer_utx = on_transfer_utx
 
     def check_wallet(self):
         # check seed has been set
@@ -502,6 +508,28 @@ class ZapWeb():
                     if scanned_block_num % 100 == 0:
                         db.session.commit()
                     gevent.sleep(0)
+
+                # check for unconfirmed transactions
+                if self.on_transfer_utx:
+                    txs = txs_unconfirmed()
+                    for tx in txs:
+                        if tx["type"] == 4:
+                            recipient = tx["recipient"]
+                            asset_id = tx["assetId"]
+                            if recipient == cfg.address and asset_id == cfg.asset_id:
+                                txid = tx["id"]
+                                if txid not in seen_transfer_txs:
+                                    sig = tx["signature"]
+                                    pubkey = tx["senderPublicKey"]
+                                    timestamp = tx["timestamp"]
+                                    amount = tx["amount"]
+                                    fee = tx["fee"]
+                                    attachment = tx["attachment"]
+                                    if attachment:
+                                        attachment = base58.b58decode(attachment)
+                                    self.on_transfer_utx(None, txid, sig, pubkey, asset_id, timestamp, amount, fee, recipient, attachment)
+                                    seen_transfer_txs[txid] = 1
+
                 db.session.commit()
 
         def start_greenlets():

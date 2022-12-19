@@ -142,7 +142,7 @@ if __name__ == "__main__":
         logger.info("starting greenlets")
         group = gevent.pool.Group()
         greenlet_count = 0
-        zapweb = web.ZapWeb(no_waves=no_waves)
+        zapweb = web.ZapWeb(no_waves=no_waves, on_transfer_utx=on_transfer_utx)
         zapweb.start(group)
         greenlet_count += 1 if no_waves else 2
         wutx = None
