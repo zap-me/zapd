@@ -212,8 +212,9 @@ def parse_message(wutx, msg, on_transfer_utx=None):
                     txid = transfer_asset_txid(pubkey, asset_id, fee_asset_id, timestamp, amount, fee, recipient, attachment)
 
                     #logger.info(f"  txid: {txid}, senders pubkey: {base58.b58encode(pubkey)}, recipient: {base58.b58encode(recipient)}, amount: {amount}, fee: {fee}, asset id: {asset_id}, timestamp: {timestamp}, attachment: {attachment}")
-                    if on_transfer_utx:
-                        on_transfer_utx(wutx, txid, sig, pubkey, asset_id, timestamp, amount, fee, recipient, attachment)
+                    # replaced by rest scanning option in web.py
+                    #if on_transfer_utx:
+                    #    on_transfer_utx(wutx, txid, sig, pubkey, asset_id, timestamp, amount, fee, recipient, attachment)
 
             if content_id == CONTENT_ID_BLOCK:
                 # block

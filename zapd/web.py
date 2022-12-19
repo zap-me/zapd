@@ -528,7 +528,10 @@ class ZapWeb():
                                     if attachment:
                                         attachment = base58.b58decode(attachment)
                                     self.on_transfer_utx(None, txid, sig, pubkey, asset_id, timestamp, amount, fee, recipient, attachment)
-                                    seen_transfer_txs[txid] = 1
+                                    seen_transfer_txs[txid] = time.time()
+                                    for key, value in seen_transfer_txs.items():
+                                        if key != txid and value < time.time() - 3600:
+                                            seen_transfer_txs.pop(key)
 
                 db.session.commit()
 
